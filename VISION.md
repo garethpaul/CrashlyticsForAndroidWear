@@ -42,7 +42,7 @@ paths.
 Credentials for Fabric, Crashlytics, or any replacement service must stay out
 of git.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Hardcoded reporting credentials
 - Crash payload expansion without privacy notes
