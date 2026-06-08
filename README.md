@@ -1,5 +1,8 @@
 # CrashlyticsForAndroidWear
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 ## Overview
 
 `garethpaul/CrashlyticsForAndroidWear` is an Android application or sample. An example of Crashlytics implementation in an Android Wear Project.
@@ -78,4 +81,3 @@ Keep changes small and tied to the project that is already present in this repos
 Prior README summary:
 
 > CrashlyticsForAndroidWear <!-- README-OVERVIEW-IMAGE --> CrashlyticsForAndroidWear ========================= An example of Crashlytics implementation in an Android Wear Project. The purpose of the demo app is to show how you can implement Crahslytics on the wear device. This implementations try to avoid mixing Crashlytics report handling and other message. Context
-
