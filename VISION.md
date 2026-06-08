@@ -39,7 +39,6 @@ Canonical security policy and reporting:
 
 - [`SECURITY.md`](SECURITY.md)
 
-
 Crash reports may contain stack traces, device details, and user-adjacent data.
 Changes should avoid adding unnecessary payloads, logs, or external reporting
 paths.
