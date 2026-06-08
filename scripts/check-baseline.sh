@@ -8,8 +8,10 @@ WEAR_BUILD="$ROOT_DIR/wear/build.gradle"
 WRAPPER="$ROOT_DIR/gradle/wrapper/gradle-wrapper.properties"
 README="$ROOT_DIR/README.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-crashlytics-wear-build-baseline.md"
+LINT_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gradle-lint-baseline.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
+WEAR_LINT="$ROOT_DIR/wear/lint.xml"
 MOBILE_RECEIVER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrashlyticsWearableListenerReceiver.java"
 WEARABLE_BROADCASTER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/WearableListenerBroadcaster.java"
 WEARABLE_RECEIVER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/WearableListenerReceiver.java"
@@ -28,8 +30,10 @@ require_file() {
 
 for path in \
   ".gitignore" \
+  "CHANGES.md" \
   "README.md" \
   "docs/plans/2026-06-08-crashlytics-wear-build-baseline.md" \
+  "docs/plans/2026-06-08-gradle-lint-baseline.md" \
   "gradlew" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "settings.gradle" \
@@ -37,6 +41,7 @@ for path in \
   "mobile/build.gradle" \
   "mobile/lint.xml" \
   "wear/build.gradle" \
+  "wear/lint.xml" \
   "mobile/src/main/AndroidManifest.xml" \
   "wear/src/main/AndroidManifest.xml"; do
   require_file "$path"
@@ -132,10 +137,20 @@ if ! grep -Fq 'tools:ignore="ExportedService"' "$MOBILE_MANIFEST"; then
   exit 1
 fi
 
-if ! grep -Fq '<issue id="LintError" severity="ignore" />' "$MOBILE_LINT"; then
-  printf '%s\n' "Legacy mobile lint must suppress only the missing API database runner error." >&2
-  exit 1
-fi
+for lint_config in "$MOBILE_LINT" "$WEAR_LINT"; do
+  if ! grep -Fq '<issue id="LintError" severity="ignore" />' "$lint_config"; then
+    printf '%s\n' "Legacy lint must suppress the missing API database runner error in $lint_config" >&2
+    exit 1
+  fi
+  if ! grep -Fq '<issue id="OldTargetApi" severity="ignore" />' "$lint_config"; then
+    printf '%s\n' "Legacy lint must document the intentional SDK 21 target warning in $lint_config" >&2
+    exit 1
+  fi
+  if [ "$(grep -c "<issue " "$lint_config")" -ne 2 ]; then
+    printf '%s\n' "Legacy lint suppressions must stay limited to LintError and OldTargetApi in $lint_config" >&2
+    exit 1
+  fi
+done
 
 if grep -Fq "start_name" "$ROOT_DIR/mobile/src/main/res/values/strings.xml"; then
   printf '%s\n' "Unused starter string start_name must not be tracked." >&2
@@ -144,6 +159,11 @@ fi
 
 if grep -Fq "ObjectInputStream" "$MOBILE_RECEIVER" || grep -Fq "ObjectOutputStream" "$WEAR_SERVICE"; then
   printf '%s\n' "Wear crash payloads must not use Java object serialization." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Long.valueOf(Build.TIME).toString()" "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear service must avoid direct Long constructors in crash metadata." >&2
   exit 1
 fi
 
@@ -212,8 +232,23 @@ if ! grep -Fq "scripts/check-baseline.sh" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq "./gradlew lint" "$README"; then
+  printf '%s\n' "README must document the Gradle lint gate." >&2
+  exit 1
+fi
+
+if ! grep -Fq "./gradlew check" "$README"; then
+  printf '%s\n' "README must document the Gradle check gate." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN"; then
   printf '%s\n' "Plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$LINT_PLAN"; then
+  printf '%s\n' "Lint plan must be marked completed." >&2
   exit 1
 fi
 

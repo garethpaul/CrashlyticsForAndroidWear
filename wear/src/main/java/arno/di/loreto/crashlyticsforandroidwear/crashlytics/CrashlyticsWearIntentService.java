@@ -160,7 +160,7 @@ public class CrashlyticsWearIntentService extends IntentService {
             dataMap.putString(DATA_MAP_SUPPORTED_ABIS, abis.toString());
             */
             dataMap.putString(DATA_MAP_TAGS,Build.TAGS);
-            dataMap.putString(DATA_MAP_TIME,new Long(Build.TIME).toString());
+            dataMap.putString(DATA_MAP_TIME,Long.valueOf(Build.TIME).toString());
             dataMap.putString(DATA_MAP_UNKNOWN,Build.UNKNOWN);
             dataMap.putString(DATA_MAP_USER,Build.USER);
             dataMap.putString(DATA_MAP_VERSION_CODENAME,Build.VERSION.CODENAME);

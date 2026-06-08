@@ -59,6 +59,8 @@ scripts/check-baseline.sh
 When the legacy Android toolchain can resolve all discontinued artifacts, use:
 
 ```bash
+ANDROID_HOME=/path/to/android-sdk ./gradlew lint --no-daemon
+ANDROID_HOME=/path/to/android-sdk ./gradlew check --no-daemon
 ANDROID_HOME=/path/to/android-sdk ./gradlew tasks --no-daemon
 ANDROID_HOME=/path/to/android-sdk ./gradlew assembleDebug --no-daemon
 ```
@@ -92,11 +94,12 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Crashlytics credentials when testing against Fabric.
 - Wear crash forwarding sends stack traces as text, package-scopes internal
   broadcasts, and disconnects GoogleApiClient clients after message sends.
-- Mobile lint keeps only the old missing API database runner error suppressed;
-  the exported Wear listener service warning is documented on the service that
-  receives Google Play Services `BIND_LISTENER` events.
+- Mobile and wear lint keep only the old missing API database runner error and
+  the intentional SDK 21 target warning suppressed; `./gradlew lint` should
+  report zero module issues.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
+- See `CHANGES.md` for maintenance history.
 
 ## Contributing
 
