@@ -3,7 +3,6 @@ package arno.di.loreto.crashlyticsforandroidwear.wearable;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Message;
 import android.util.Log;
 
 import com.google.android.gms.wearable.DataEventBuffer;
@@ -48,26 +47,50 @@ public class WearableListenerReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d(MYLOGGER, "onReceive");
+        if (intent == null) {
+            Log.e(MYLOGGER, "Ignoring wear event without an intent");
+            return;
+        }
+        if (!WearableListenerBroadcaster.ACTION_NAME.equals(intent.getAction())) {
+            Log.e(MYLOGGER, "Ignoring unexpected wear event action: " + intent.getAction());
+            return;
+        }
+
         String eventType = intent.getStringExtra(WearableListenerBroadcaster.EXTRA_DATA_EVENT_TYPE);
+        if(eventType != null && eventType.equalsIgnoreCase(WearableListenerBroadcaster.EVENT_TYPE_ON_CREATE)){
+            onCreate(context);
+            return;
+        }
+
         byte[] bytes = intent.getByteArrayExtra(WearableListenerBroadcaster.EXTRA_DATA_EVENT);
+        if (bytes == null) {
+            Log.e(MYLOGGER, "Ignoring wear event without payload: " + eventType);
+            return;
+        }
+
         if(eventType != null && eventType.equalsIgnoreCase(WearableListenerBroadcaster.EVENT_TYPE_ON_MESSAGE_RECEIVED)){
             MessageEvent messageEvent = getObjectFromByteArray(bytes, MessageEvent.class);
-            onMessageReceived(context, messageEvent);
+            if (messageEvent != null) {
+                onMessageReceived(context, messageEvent);
+            }
         }
         else if(eventType != null && eventType.equalsIgnoreCase(WearableListenerBroadcaster.EVENT_TYPE_ON_DATA_CHANGED)){
             DataEventBuffer dataEvents = getObjectFromByteArray(bytes, DataEventBuffer.class);
-            onDataChanged(context, dataEvents);
+            if (dataEvents != null) {
+                onDataChanged(context, dataEvents);
+            }
         }
         else if(eventType != null && eventType.equalsIgnoreCase(WearableListenerBroadcaster.EVENT_TYPE_ON_PEER_CONNECTED)){
             Node peer = getObjectFromByteArray(bytes, Node.class);
-            onPeerConnected(context, peer);
+            if (peer != null) {
+                onPeerConnected(context, peer);
+            }
         }
         else if(eventType != null && eventType.equalsIgnoreCase(WearableListenerBroadcaster.EVENT_TYPE_ON_PEER_DISCONNECTED)){
             Node peer = getObjectFromByteArray(bytes, Node.class);
-            onPeerDisconnected(context, peer);
-        }
-        else if(eventType != null && eventType.equalsIgnoreCase(WearableListenerBroadcaster.EVENT_TYPE_ON_CREATE)){
-            onCreate(context);
+            if (peer != null) {
+                onPeerDisconnected(context, peer);
+            }
         }
         else{
             Log.e(MYLOGGER, "Unexpected eventType:"+eventType);
@@ -82,19 +105,38 @@ public class WearableListenerReceiver extends BroadcastReceiver {
      * @param <T>
      * @return
      */
-    private<T> T getObjectFromByteArray(byte[] byteArray, Class T){
+    private<T> T getObjectFromByteArray(byte[] byteArray, Class<T> T){
         T result = null;
         ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
         ObjectInputStream ois = null;
         try {
             ois = new ObjectInputStream(bis);
-            result = (T)ois.readObject();
+            Object object = ois.readObject();
+            if (object == null) {
+                Log.e(MYLOGGER, "Wear event payload was null");
+            }
+            else if (T.isInstance(object)) {
+                result = T.cast(object);
+            }
+            else {
+                Log.e(MYLOGGER, "Unexpected wear event payload type: " + object.getClass().getName());
+            }
         }
         catch (IOException e) {
-            e.printStackTrace();
+            Log.e(MYLOGGER, "Unable to deserialize wear event payload", e);
         }
         catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            Log.e(MYLOGGER, "Unable to deserialize wear event payload", e);
+        }
+        finally {
+            try {
+                if (ois != null) {
+                    ois.close();
+                }
+            }
+            catch (IOException e) {
+                Log.e(MYLOGGER, "Unable to close wear event payload stream", e);
+            }
         }
         return result;
     }

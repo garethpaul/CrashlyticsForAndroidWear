@@ -50,13 +50,27 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Testing and Verification
 
-- `./gradlew test` or Android Studio's test runner when the SDK is configured
+Run the source-level baseline guard before committing:
+
+```bash
+scripts/check-baseline.sh
+```
+
+When the legacy Android toolchain can resolve all discontinued artifacts, use:
+
+```bash
+ANDROID_HOME=/path/to/android-sdk ./gradlew tasks --no-daemon
+ANDROID_HOME=/path/to/android-sdk ./gradlew assembleDebug --no-daemon
+```
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets
 
-- The scan found credential-adjacent names. Review configuration paths before running against real accounts.
+- The committed Crashlytics API key is an all-zero placeholder that lets the
+  legacy Gradle plugin run without storing a real Fabric credential.
+- Replace the placeholder only in local, private configuration when testing
+  against a real Crashlytics/Fabric project.
 
 ## Security and Privacy Notes
 
@@ -69,6 +83,15 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Maintenance Notes
 
 - This looks like a legacy Android project or sample. Expect Android SDK, Gradle, and support-library versions to matter.
+- The Gradle wrapper is intentionally kept on the legacy 1.12 distribution, but
+  it must use HTTPS. Fabric and Play Services Wear dependencies are pinned to
+  avoid dynamic resolution drift, and the unused legacy wearable support
+  dependency is intentionally removed.
+- Debug builds disable Fabric resource tasks while the all-zero Crashlytics API
+  key placeholder is present. Use local untracked configuration for real
+  Crashlytics credentials when testing against Fabric.
+- Wear crash forwarding sends stack traces as text, package-scopes internal
+  broadcasts, and disconnects GoogleApiClient clients after message sends.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

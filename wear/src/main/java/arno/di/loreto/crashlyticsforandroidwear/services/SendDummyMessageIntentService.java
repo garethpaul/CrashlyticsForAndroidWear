@@ -39,7 +39,16 @@ public class SendDummyMessageIntentService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        if (intent == null) {
+            Log.e(MYLOGGER, "Ignoring dummy message without intent");
+            return;
+        }
+
         String message = intent.getStringExtra(EXTRA_DATA_MESSAGE);
+        if (message == null) {
+            Log.e(MYLOGGER, "Ignoring dummy message without payload");
+            return;
+        }
         sendMessage(PATH_DUMMY, message);
     }
 
@@ -52,20 +61,30 @@ public class SendDummyMessageIntentService extends IntentService {
         GoogleApiClient mApiClient = new GoogleApiClient.Builder(this)
                 .addApi( Wearable.API )
                 .build();
-        Log.d(MYLOGGER, "Connecting to Google API");
-        mApiClient.blockingConnect();
-        Log.d(MYLOGGER, "Connected to Google API");
-
-        NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
-        Log.d(MYLOGGER, "Connected nodes size "+nodes.getNodes().size());
-        for(Node node : nodes.getNodes()) {
-            MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
-                    mApiClient, node.getId(), path, message.getBytes() ).await();
-            if(result.getStatus().isSuccess()) {
-                Log.d(MYLOGGER, "Message sent on node:"+node.getDisplayName());
+        try {
+            Log.d(MYLOGGER, "Connecting to Google API");
+            if (!mApiClient.blockingConnect().isSuccess()) {
+                Log.e(MYLOGGER, "Connecting to Google API failed");
+                return;
             }
-            else{
-                Log.e(MYLOGGER, "Sending message failed: " + result.getStatus().getStatusMessage() + ", Node:" + node.getDisplayName());
+            Log.d(MYLOGGER, "Connected to Google API");
+
+            NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
+            Log.d(MYLOGGER, "Connected nodes size "+nodes.getNodes().size());
+            for(Node node : nodes.getNodes()) {
+                MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
+                        mApiClient, node.getId(), path, message.getBytes() ).await();
+                if(result.getStatus().isSuccess()) {
+                    Log.d(MYLOGGER, "Message sent on node:"+node.getDisplayName());
+                }
+                else{
+                    Log.e(MYLOGGER, "Sending message failed: " + result.getStatus().getStatusMessage() + ", Node:" + node.getDisplayName());
+                }
+            }
+        }
+        finally {
+            if (mApiClient.isConnected() || mApiClient.isConnecting()) {
+                mApiClient.disconnect();
             }
         }
     }

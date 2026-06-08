@@ -20,17 +20,21 @@
                 <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
             </intent-filter>
         </service>
-        <receiver android:name="arno.di.loreto.crashlyticsforandroidwear.crashlytics.CrashlyticsWearableListenerReceiver" >
+        <receiver
+            android:name="arno.di.loreto.crashlyticsforandroidwear.crashlytics.CrashlyticsWearableListenerReceiver"
+            android:exported="false" >
             <intent-filter>
                 <action android:name="arno.di.loreto.wearmessage" />
             </intent-filter>
         </receiver>
-        <receiver android:name="arno.di.loreto.crashlyticsforandroidwear.dummy.DummyWearableListenerReceiver" >
+        <receiver
+            android:name="arno.di.loreto.crashlyticsforandroidwear.dummy.DummyWearableListenerReceiver"
+            android:exported="false" >
             <intent-filter>
                 <action android:name="arno.di.loreto.wearmessage" />
             </intent-filter>
         </receiver>
-        <meta-data android:name="com.crashlytics.ApiKey" android:value="put your key here"/>
+        <meta-data android:name="com.crashlytics.ApiKey" android:value="0000000000000000000000000000000000000000"/>
     </application>
 
 </manifest>

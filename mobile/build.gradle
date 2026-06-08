@@ -4,7 +4,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'io.fabric.tools:gradle:1.+'
+        classpath 'io.fabric.tools:gradle:1.14.4'
     }
 }
 apply plugin: 'com.android.application'
@@ -17,7 +17,7 @@ repositories {
 
 android {
     compileSdkVersion 21
-    buildToolsVersion "21.1.1"
+    buildToolsVersion "24.0.3"
 
     defaultConfig {
         applicationId "arno.di.loreto.crashlyticsforandroidwear"
@@ -27,6 +27,9 @@ android {
         versionName "1.0"
     }
     buildTypes {
+        debug {
+            ext.enableCrashlytics = false
+        }
         release {
             runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -37,8 +40,23 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     wearApp project(':wear')
-    compile 'com.google.android.gms:play-services-wearable:+'
+    compile 'com.google.android.gms:play-services-wearable:6.1.71'
     compile('com.crashlytics.sdk.android:crashlytics:2.2.0@aar') {
         transitive = true;
     }
+}
+
+afterEvaluate {
+    if (usesPlaceholderCrashlyticsKey()) {
+        tasks.matching { task ->
+            task.name.startsWith('fabric') && task.name.endsWith('Debug')
+        }.all { task ->
+            task.enabled = false
+        }
+    }
+}
+
+def usesPlaceholderCrashlyticsKey() {
+    def manifest = file('src/main/AndroidManifest.xml')
+    manifest.exists() && manifest.text.contains('0000000000000000000000000000000000000000')
 }

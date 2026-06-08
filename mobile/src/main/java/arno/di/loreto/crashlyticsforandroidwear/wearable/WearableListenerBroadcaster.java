@@ -1,10 +1,8 @@
 package arno.di.loreto.crashlyticsforandroidwear.wearable;
 
 import android.content.Intent;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Node;
@@ -13,8 +11,6 @@ import com.google.android.gms.wearable.WearableListenerService;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-
-import io.fabric.sdk.android.Fabric;
 
 /**
  * The (only) WearableListenerService which will received message from the watch.
@@ -57,8 +53,7 @@ public class WearableListenerBroadcaster extends WearableListenerService {
     @Override
     public void onPeerDisconnected(Node peer) {
         Log.d(MYLOGGER, "onPeerDisconnected "+ peer.getDisplayName());
-        Intent intent = new Intent(ACTION_NAME);
-        intent.setAction(ACTION_NAME);
+        Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(new SerializableNode(peer)));
         intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_PEER_DISCONNECTED);
         this.sendBroadcast(intent);
@@ -72,7 +67,7 @@ public class WearableListenerBroadcaster extends WearableListenerService {
     @Override
     public void onPeerConnected(Node peer) {
         Log.d(MYLOGGER, "onPeerConnected "+ peer.getDisplayName());
-        Intent intent = new Intent(ACTION_NAME);
+        Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(new SerializableNode(peer)));
         intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_PEER_CONNECTED);
         this.sendBroadcast(intent);
@@ -86,7 +81,7 @@ public class WearableListenerBroadcaster extends WearableListenerService {
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
         Log.d(MYLOGGER, "onMessageReceived, path="+messageEvent.getPath());
-        Intent intent = new Intent(ACTION_NAME);
+        Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(new SerializableMessageEvent(messageEvent)));
         intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_MESSAGE_RECEIVED);
         intent.putExtra(EXTRA_DATA_PATH, messageEvent.getPath());
@@ -126,10 +121,16 @@ public class WearableListenerBroadcaster extends WearableListenerService {
     public void onCreate() {
         super.onCreate();
         Log.d(MYLOGGER, "onCreate");
-        Intent intent = new Intent(ACTION_NAME);
+        Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_CREATE);
         Log.d(MYLOGGER, "Broadcasting onCreate to " + ACTION_NAME);
         this.sendBroadcast(intent);
+    }
+
+    private Intent newWearEventIntent() {
+        Intent intent = new Intent(ACTION_NAME);
+        intent.setPackage(getPackageName());
+        return intent;
     }
 
     /**

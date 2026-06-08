@@ -27,6 +27,11 @@ public class CrashlyticsWear {
      * @param application The application.
      */
     public static void init(Application application){
+        if (application == null) {
+            Log.e(MYLOGGER, "CrashlyticsWear.init(Application) requires an application");
+            return;
+        }
+
         if(crachlyticsUncaughtExceptionHandler == null) {
             Log.d(MYLOGGER, "Initialize CrachlyticsUncaughtExceptionHandler");
             crachlyticsUncaughtExceptionHandler = new CrachlyticsWearUncaughtExceptionHandler(application);
@@ -42,6 +47,15 @@ public class CrashlyticsWear {
      * @param ex The exception
      */
     public static void logException(Throwable ex){
+        if (context == null) {
+            Log.e(MYLOGGER, "CrashlyticsWear.init(Application) must be called before logException(Throwable).");
+            return;
+        }
+        if (ex == null) {
+            Log.e(MYLOGGER, "Ignoring null throwable");
+            return;
+        }
+
         Intent intent = new Intent(context, CrashlyticsWearIntentService.class);
         intent.putExtra(CrashlyticsWearIntentService.EXTRA_DATA_ERROR, ex);
         intent.putExtra(CrashlyticsWearIntentService.EXTRA_DATA_REPORT_TYPE, CrashlyticsWearIntentService.REPORT_TYPE_EXCEPTION);

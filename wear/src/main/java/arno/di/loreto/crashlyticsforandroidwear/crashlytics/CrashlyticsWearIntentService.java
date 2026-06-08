@@ -12,9 +12,9 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 /**
  * An IntentService to send Crashlytics reports to hosting device from wear device.
@@ -92,19 +92,30 @@ public class CrashlyticsWearIntentService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         Log.d(MYLOGGER, "onHandleIntent called.");
-        Throwable ex = (Throwable)intent.getSerializableExtra(EXTRA_DATA_ERROR);
+        if (intent == null) {
+            Log.e(MYLOGGER, "Ignoring crashlytics report without intent");
+            return;
+        }
+
+        Object errorExtra = intent.getSerializableExtra(EXTRA_DATA_ERROR);
         String report_type = (String)intent.getStringExtra(EXTRA_DATA_REPORT_TYPE);
+        if (!(errorExtra instanceof Throwable)) {
+            Log.e(MYLOGGER, "Ignoring crashlytics report without throwable");
+            return;
+        }
+        if (report_type == null) {
+            Log.e(MYLOGGER, "Ignoring crashlytics report without report type");
+            return;
+        }
+
+        Throwable ex = (Throwable) errorExtra;
         Log.d(MYLOGGER, "Received error", ex);
 
         DataMap dataMap = new DataMap();
 
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = null;
         try {
 
-            oos = new ObjectOutputStream(bos);
-            oos.writeObject(ex);
-            dataMap.putByteArray(DATA_MAP_ERROR, bos.toByteArray());
+            dataMap.putString(DATA_MAP_ERROR, throwableToString(ex));
             dataMap.putString(DATA_MAP_REPORT_TYPE, report_type);
 
             //Some OS and hardware data, maybe we can send more informations or do it a better way...
@@ -162,17 +173,24 @@ public class CrashlyticsWearIntentService extends IntentService {
         catch(IOException _ex){
             Log.e(MYLOGGER, "Crashlytics report failed", _ex);
         }
-        finally {
-            try {
-                if (oos != null)
-                    oos.close();
-            }
-            catch(IOException _ex){}
+    }
 
-            try {
-                bos.close();
+    private static String throwableToString(Throwable ex) throws IOException {
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        try {
+            if(ex == null) {
+                printWriter.print("No Throwable supplied.");
             }
-            catch(IOException _ex){}
+            else {
+                ex.printStackTrace(printWriter);
+            }
+            printWriter.flush();
+            return stringWriter.toString();
+        }
+        finally {
+            printWriter.close();
+            stringWriter.close();
         }
     }
 
@@ -185,20 +203,30 @@ public class CrashlyticsWearIntentService extends IntentService {
         GoogleApiClient mApiClient = new GoogleApiClient.Builder(CrashlyticsWearIntentService.this)
                 .addApi( Wearable.API )
                 .build();
-        Log.d(MYLOGGER, "Connecting to Google API");
-        mApiClient.blockingConnect();
-        Log.d(MYLOGGER, "Connected to Google API");
-
-        NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
-        Log.d(MYLOGGER, "Connected nodes size "+nodes.getNodes().size());
-        for(Node node : nodes.getNodes()) {
-            MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
-                    mApiClient, node.getId(), path, dataMap.toByteArray() ).await();
-            if(result.getStatus().isSuccess()) {
-                Log.d(MYLOGGER, "Message sent on node:"+node.getDisplayName());
+        try {
+            Log.d(MYLOGGER, "Connecting to Google API");
+            if (!mApiClient.blockingConnect().isSuccess()) {
+                Log.e(MYLOGGER, "Connecting to Google API failed");
+                return;
             }
-            else{
-                Log.e(MYLOGGER, "Sending message failed: " + result.getStatus().getStatusMessage() + ", Node:" + node.getDisplayName());
+            Log.d(MYLOGGER, "Connected to Google API");
+
+            NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
+            Log.d(MYLOGGER, "Connected nodes size "+nodes.getNodes().size());
+            for(Node node : nodes.getNodes()) {
+                MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
+                        mApiClient, node.getId(), path, dataMap.toByteArray() ).await();
+                if(result.getStatus().isSuccess()) {
+                    Log.d(MYLOGGER, "Message sent on node:"+node.getDisplayName());
+                }
+                else{
+                    Log.e(MYLOGGER, "Sending message failed: " + result.getStatus().getStatusMessage() + ", Node:" + node.getDisplayName());
+                }
+            }
+        }
+        finally {
+            if (mApiClient.isConnected() || mApiClient.isConnecting()) {
+                mApiClient.disconnect();
             }
         }
     }
