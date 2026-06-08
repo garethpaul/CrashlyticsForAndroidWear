@@ -1,5 +1,8 @@
 ## Crashlytics For Android Wear Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 Crashlytics For Android Wear is a legacy Android Wear sample that forwards
 wear-device crash reports to a paired mobile app so Crashlytics can report them.
 
