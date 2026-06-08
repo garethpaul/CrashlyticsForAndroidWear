@@ -48,3 +48,6 @@ of git.
 - Crash payload expansion without privacy notes
 - Wearable message rewrites without paired-device verification
 - Broad dependency migrations mixed with crash behavior changes
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
