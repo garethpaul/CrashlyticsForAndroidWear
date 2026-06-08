@@ -9,6 +9,7 @@ WRAPPER="$ROOT_DIR/gradle/wrapper/gradle-wrapper.properties"
 README="$ROOT_DIR/README.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-crashlytics-wear-build-baseline.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
+MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
 MOBILE_RECEIVER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrashlyticsWearableListenerReceiver.java"
 WEARABLE_BROADCASTER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/WearableListenerBroadcaster.java"
 WEARABLE_RECEIVER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/WearableListenerReceiver.java"
@@ -34,6 +35,7 @@ for path in \
   "settings.gradle" \
   "build.gradle" \
   "mobile/build.gradle" \
+  "mobile/lint.xml" \
   "wear/build.gradle" \
   "mobile/src/main/AndroidManifest.xml" \
   "wear/src/main/AndroidManifest.xml"; do
@@ -122,6 +124,21 @@ fi
 
 if ! grep -Fq 'android:exported="false"' "$MOBILE_MANIFEST"; then
   printf '%s\n' "Crashlytics broadcast receivers must be non-exported." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'tools:ignore="ExportedService"' "$MOBILE_MANIFEST"; then
+  printf '%s\n' "WearableListenerService exported-service lint warning must be explicitly documented." >&2
+  exit 1
+fi
+
+if ! grep -Fq '<issue id="LintError" severity="ignore" />' "$MOBILE_LINT"; then
+  printf '%s\n' "Legacy mobile lint must suppress only the missing API database runner error." >&2
+  exit 1
+fi
+
+if grep -Fq "start_name" "$ROOT_DIR/mobile/src/main/res/values/strings.xml"; then
+  printf '%s\n' "Unused starter string start_name must not be tracked." >&2
   exit 1
 fi
 

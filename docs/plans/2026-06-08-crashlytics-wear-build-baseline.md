@@ -44,7 +44,9 @@ message boundary and deserialized it in the mobile app.
 - R6. Debug builds must not require a real Crashlytics API key.
 - R7. Wear crash payloads must avoid Java object serialization/deserialization.
 - R8. Manifest receivers for internal wear messages must not be exported.
-- R9. README and a guard script must document and verify the baseline.
+- R9. Mobile lint must pass with only the legacy missing API database runner
+  error suppressed.
+- R10. README and a guard script must document and verify the baseline.
 
 ---
 
@@ -85,7 +87,7 @@ message boundary and deserialized it in the mobile app.
 
 - **Goal:** Make the legacy dependency and wrapper inputs deterministic.
 - **Files:** `build.gradle`, `gradle/wrapper/gradle-wrapper.properties`, `mobile/build.gradle`, `wear/build.gradle`, `mobile/src/main/AndroidManifest.xml`
-- **Verification:** `scripts/check-baseline.sh`, `ANDROID_HOME=/home/gjones/android-sdk ./gradlew tasks --no-daemon`, `ANDROID_HOME=/home/gjones/android-sdk ./gradlew assembleDebug --no-daemon`
+- **Verification:** `scripts/check-baseline.sh`, `ANDROID_HOME=/home/gjones/android-sdk ./gradlew tasks --no-daemon`, `ANDROID_HOME=/home/gjones/android-sdk ./gradlew assembleDebug --no-daemon`, `ANDROID_HOME=/home/gjones/android-sdk ./gradlew :mobile:lintDebug --no-daemon`
 
 ### U3. Crash Payload Safety
 
@@ -96,7 +98,7 @@ message boundary and deserialized it in the mobile app.
 ### U4. Documentation and Guard
 
 - **Goal:** Leave a repeatable source-level gate and clear modernization notes.
-- **Files:** `README.md`, `scripts/check-baseline.sh`, this plan
+- **Files:** `README.md`, `mobile/lint.xml`, `scripts/check-baseline.sh`, this plan
 - **Verification:** `scripts/check-baseline.sh`, `git diff --check`
 
 ---
