@@ -2,6 +2,8 @@
 
 ## 2026-06-08
 
+- Added `make check` as the root wrapper for source, lint, Gradle check,
+  task-listing, and debug build verification.
 - Released Wear `DataEventBuffer` callbacks after validation to avoid retaining
   Google Play Services resources.
 - Guarded Wear listener broadcaster and dummy receiver callbacks against

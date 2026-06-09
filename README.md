@@ -53,6 +53,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 Run the source-level baseline guard before committing:
 
 ```bash
+make check
 scripts/check-baseline.sh
 ```
 
@@ -102,6 +103,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `CHANGES.md` for maintenance history.
+- See `docs/plans/2026-06-08-crashlytics-wear-check-wrapper.md` for the root
+  verification wrapper baseline.
 
 ## Contributing
 
