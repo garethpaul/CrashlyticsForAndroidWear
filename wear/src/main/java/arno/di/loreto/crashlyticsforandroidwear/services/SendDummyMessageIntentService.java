@@ -88,6 +88,10 @@ public class SendDummyMessageIntentService extends IntentService {
 
                 MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
                         mApiClient, node.getId(), path, message.getBytes() ).await();
+                if (result == null || result.getStatus() == null) {
+                    Log.e(MYLOGGER, "Dummy message send finished without status, Node:" + node.getDisplayName());
+                    continue;
+                }
                 if(result.getStatus().isSuccess()) {
                     Log.d(MYLOGGER, "Message sent on node:"+node.getDisplayName());
                 }

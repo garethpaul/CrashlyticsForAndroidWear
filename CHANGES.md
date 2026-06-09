@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Guarded Wear crash and dummy Data Layer send loops against missing send
+  results or status objects before reading status details.
 - Disabled mobile and wear app-data backup in the checked-in manifests and
   added baseline coverage for the opt-out.
 - Guarded Wear crash and dummy message senders against missing connected-node

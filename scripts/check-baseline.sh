@@ -14,6 +14,7 @@ WEAR_REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-report-type-allowlis
 WEAR_THROWABLE_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-throwable-log-redaction.md"
 MOBILE_THROWABLE_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-09-mobile-throwable-log-redaction.md"
 WEAR_CONNECTED_NODE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-connected-node-send-guard.md"
+WEAR_SEND_RESULT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-send-result-status-guard.md"
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 WEAR_MANIFEST="$ROOT_DIR/wear/src/main/AndroidManifest.xml"
@@ -45,6 +46,7 @@ for path in \
   "docs/plans/2026-06-09-mobile-throwable-log-redaction.md" \
   "docs/plans/2026-06-09-android-backup-opt-out.md" \
   "docs/plans/2026-06-09-wear-connected-node-send-guard.md" \
+  "docs/plans/2026-06-09-wear-send-result-status-guard.md" \
   "docs/plans/2026-06-09-wear-report-type-allowlist.md" \
   "docs/plans/2026-06-09-wear-throwable-log-redaction.md" \
   "gradlew" \
@@ -303,6 +305,12 @@ if ! grep -Fq "node == null || node.getId() == null || node.getId().length() == 
   exit 1
 fi
 
+if ! grep -Fq "result == null || result.getStatus() == null" "$WEAR_SERVICE" ||
+  ! grep -Fq "Crashlytics send finished without status" "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear crash sender must guard missing send results and statuses." >&2
+  exit 1
+fi
+
 if ! grep -Fq "Ignoring dummy message without intent" "$DUMMY_SERVICE" ||
   ! grep -Fq "message == null || message.length() == 0" "$DUMMY_SERVICE" ||
   ! grep -Fq "Ignoring dummy message without payload" "$DUMMY_SERVICE"; then
@@ -325,6 +333,12 @@ fi
 
 if ! grep -Fq "blockingConnect().isSuccess()" "$DUMMY_SERVICE" || ! grep -Fq "mApiClient.disconnect()" "$DUMMY_SERVICE"; then
   printf '%s\n' "Dummy message sender must check GoogleApiClient connection success and disconnect." >&2
+  exit 1
+fi
+
+if ! grep -Fq "result == null || result.getStatus() == null" "$DUMMY_SERVICE" ||
+  ! grep -Fq "Dummy message send finished without status" "$DUMMY_SERVICE"; then
+  printf '%s\n' "Dummy message sender must guard missing send results and statuses." >&2
   exit 1
 fi
 
@@ -380,6 +394,11 @@ fi
 
 if ! grep -Fq "Wear message senders skip missing connected-node results and node ids" "$README"; then
   printf '%s\n' "README must document connected-node send guards." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Wear message senders skip missing send results and statuses" "$README"; then
+  printf '%s\n' "README must document send result status guards." >&2
   exit 1
 fi
 
@@ -440,6 +459,16 @@ fi
 
 if ! grep -Fq "make check" "$WEAR_CONNECTED_NODE_PLAN"; then
   printf '%s\n' "Wear connected node send guard plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$WEAR_SEND_RESULT_PLAN"; then
+  printf '%s\n' "Wear send result status guard plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$WEAR_SEND_RESULT_PLAN"; then
+  printf '%s\n' "Wear send result status guard plan must record make check verification." >&2
   exit 1
 fi
 

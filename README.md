@@ -107,6 +107,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   so listener callbacks do not retain Google Play Services resources.
 - Wear message senders skip missing connected-node results and node ids before
   sending crash or dummy payloads through the Data Layer.
+- Wear message senders skip missing send results and statuses before reading
+  Data Layer status details.
 - Mobile and wear app-data backup is disabled by default for the crash
   forwarding sample.
 - Mobile and wear lint keep only the old missing API database runner error and
@@ -125,6 +127,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Crashlytics receipt log redaction.
 - See `docs/plans/2026-06-09-wear-connected-node-send-guard.md` for
   connected-node send guards.
+- See `docs/plans/2026-06-09-wear-send-result-status-guard.md` for send result
+  status guards.
 - See `docs/plans/2026-06-09-android-backup-opt-out.md` for the mobile and
   wear app-data backup opt-out.
 

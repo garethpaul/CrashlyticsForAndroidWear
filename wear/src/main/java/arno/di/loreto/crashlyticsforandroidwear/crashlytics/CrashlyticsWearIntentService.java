@@ -238,6 +238,10 @@ public class CrashlyticsWearIntentService extends IntentService {
 
                 MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
                         mApiClient, node.getId(), path, dataMap.toByteArray() ).await();
+                if (result == null || result.getStatus() == null) {
+                    Log.e(MYLOGGER, "Crashlytics send finished without status, Node:" + node.getDisplayName());
+                    continue;
+                }
                 if(result.getStatus().isSuccess()) {
                     Log.d(MYLOGGER, "Message sent on node:"+node.getDisplayName());
                 }
