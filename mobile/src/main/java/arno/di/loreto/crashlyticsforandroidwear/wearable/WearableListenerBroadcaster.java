@@ -52,6 +52,10 @@ public class WearableListenerBroadcaster extends WearableListenerService {
      */
     @Override
     public void onPeerDisconnected(Node peer) {
+        if (peer == null) {
+            Log.e(MYLOGGER, "Ignoring disconnected peer without node data");
+            return;
+        }
         Log.d(MYLOGGER, "onPeerDisconnected "+ peer.getDisplayName());
         Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(new SerializableNode(peer)));
@@ -66,6 +70,10 @@ public class WearableListenerBroadcaster extends WearableListenerService {
      */
     @Override
     public void onPeerConnected(Node peer) {
+        if (peer == null) {
+            Log.e(MYLOGGER, "Ignoring connected peer without node data");
+            return;
+        }
         Log.d(MYLOGGER, "onPeerConnected "+ peer.getDisplayName());
         Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(new SerializableNode(peer)));
@@ -80,6 +88,10 @@ public class WearableListenerBroadcaster extends WearableListenerService {
      */
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
+        if (messageEvent == null || messageEvent.getPath() == null) {
+            Log.e(MYLOGGER, "Ignoring message event without path");
+            return;
+        }
         Log.d(MYLOGGER, "onMessageReceived, path="+messageEvent.getPath());
         Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(new SerializableMessageEvent(messageEvent)));
@@ -96,6 +108,10 @@ public class WearableListenerBroadcaster extends WearableListenerService {
      */
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
+        if (dataEvents == null || dataEvents.getStatus() == null) {
+            Log.e(MYLOGGER, "Ignoring data change without status");
+            return;
+        }
         Log.d(MYLOGGER, "onDataChanged"+ dataEvents.getStatus().getStatusMessage());
         /*
         Intent intent = new Intent(ACTION_NAME);

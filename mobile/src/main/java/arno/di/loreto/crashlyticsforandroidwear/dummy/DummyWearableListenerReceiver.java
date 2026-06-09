@@ -28,8 +28,18 @@ public class DummyWearableListenerReceiver extends WearableListenerReceiver {
      */
     @Override
     public void onMessageReceived(Context context, MessageEvent messageEvent) {
+        if (messageEvent == null || messageEvent.getPath() == null) {
+            Log.e(MYLOGGER, "Ignoring dummy message without path");
+            return;
+        }
+
         if(PATH_DUMMY.equalsIgnoreCase(messageEvent.getPath())){
-            String message = new String(messageEvent.getData());
+            byte[] messageData = messageEvent.getData();
+            if (messageData == null || messageData.length == 0) {
+                Log.e(MYLOGGER, "Ignoring dummy message without payload");
+                return;
+            }
+            String message = new String(messageData);
             Log.d(MYLOGGER, "message received, path="+messageEvent.getPath() + ", message="+ message);
         }
         else {

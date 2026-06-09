@@ -177,6 +177,22 @@ if ! grep -Fq "intent.setPackage(getPackageName())" "$WEARABLE_BROADCASTER"; the
   exit 1
 fi
 
+if ! grep -Fq "Ignoring disconnected peer without node data" "$WEARABLE_BROADCASTER" ||
+  ! grep -Fq "Ignoring connected peer without node data" "$WEARABLE_BROADCASTER"; then
+  printf '%s\n' "Wear event broadcaster must guard missing peer callbacks." >&2
+  exit 1
+fi
+
+if ! grep -Fq "messageEvent == null || messageEvent.getPath() == null" "$WEARABLE_BROADCASTER"; then
+  printf '%s\n' "Wear event broadcaster must guard missing message paths." >&2
+  exit 1
+fi
+
+if ! grep -Fq "dataEvents == null || dataEvents.getStatus() == null" "$WEARABLE_BROADCASTER"; then
+  printf '%s\n' "Wear event broadcaster must guard missing data change status." >&2
+  exit 1
+fi
+
 if ! grep -Fq "Ignoring unexpected wear event action" "$WEARABLE_RECEIVER"; then
   printf '%s\n' "Wear event receiver must reject unexpected broadcast actions." >&2
   exit 1
@@ -209,6 +225,12 @@ fi
 
 if ! grep -Fq "Ignoring dummy message without intent" "$DUMMY_SERVICE" || ! grep -Fq "Ignoring dummy message without payload" "$DUMMY_SERVICE"; then
   printf '%s\n' "Dummy message sender must ignore missing intent and payload." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Ignoring dummy message without path" "$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/dummy/DummyWearableListenerReceiver.java" ||
+  ! grep -Fq "byte[] messageData = messageEvent.getData()" "$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/dummy/DummyWearableListenerReceiver.java"; then
+  printf '%s\n' "Dummy message receiver must guard missing path and payload data." >&2
   exit 1
 fi
 
