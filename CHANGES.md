@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-09
+
+- Guarded mobile Crashlytics report forwarding against decoded Wear payloads
+  that are missing `REPORT_TYPE`.
+
 ## 2026-06-08
 
 - Added `make check` as the root wrapper for source, lint, Gradle check,

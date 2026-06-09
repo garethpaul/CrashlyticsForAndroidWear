@@ -95,6 +95,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Crashlytics credentials when testing against Fabric.
 - Wear crash forwarding sends stack traces as text, package-scopes internal
   broadcasts, and disconnects GoogleApiClient clients after message sends.
+- Mobile Crashlytics receivers reject decoded reports without `ERROR` or
+  `REPORT_TYPE` fields before writing Crashlytics metadata.
 - Wear data-change callbacks release their `DataEventBuffer` after validation
   so listener callbacks do not retain Google Play Services resources.
 - Mobile and wear lint keep only the old missing API database runner error and
@@ -105,6 +107,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `CHANGES.md` for maintenance history.
 - See `docs/plans/2026-06-08-crashlytics-wear-check-wrapper.md` for the root
   verification wrapper baseline.
+- See `docs/plans/2026-06-09-crashlytics-report-type-guard.md` for the mobile
+  Crashlytics report type validation guard.
 
 ## Contributing
 

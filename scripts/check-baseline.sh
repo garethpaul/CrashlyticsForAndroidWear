@@ -9,6 +9,7 @@ WRAPPER="$ROOT_DIR/gradle/wrapper/gradle-wrapper.properties"
 README="$ROOT_DIR/README.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-crashlytics-wear-build-baseline.md"
 LINT_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gradle-lint-baseline.md"
+REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-crashlytics-report-type-guard.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
 WEAR_LINT="$ROOT_DIR/wear/lint.xml"
@@ -34,6 +35,7 @@ for path in \
   "README.md" \
   "docs/plans/2026-06-08-crashlytics-wear-build-baseline.md" \
   "docs/plans/2026-06-08-gradle-lint-baseline.md" \
+  "docs/plans/2026-06-09-crashlytics-report-type-guard.md" \
   "gradlew" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "settings.gradle" \
@@ -213,6 +215,12 @@ if ! grep -Fq "Ignoring malformed crashlytics payload" "$MOBILE_RECEIVER"; then
   exit 1
 fi
 
+if ! grep -Fq "reportType == null || reportType.length() == 0" "$MOBILE_RECEIVER" ||
+  ! grep -Fq "Crashlytics report missing DATA_MAP_REPORT_TYPE" "$MOBILE_RECEIVER"; then
+  printf '%s\n' "Mobile crash receiver must reject reports without a report type." >&2
+  exit 1
+fi
+
 if ! grep -Fq "CrashlyticsWear.init(Application) must be called" "$WEAR_API"; then
   printf '%s\n' "Wear API must guard logException before initialization." >&2
   exit 1
@@ -274,6 +282,11 @@ if ! grep -Fq "Wear data-change callbacks release their \`DataEventBuffer\`" "$R
   exit 1
 fi
 
+if ! grep -Fq "Mobile Crashlytics receivers reject decoded reports without" "$README"; then
+  printf '%s\n' "README must document mobile report type validation." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN"; then
   printf '%s\n' "Plan must be marked completed." >&2
   exit 1
@@ -281,6 +294,11 @@ fi
 
 if ! grep -Fq "status: completed" "$LINT_PLAN"; then
   printf '%s\n' "Lint plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$REPORT_TYPE_PLAN"; then
+  printf '%s\n' "Report type plan must be marked completed." >&2
   exit 1
 fi
 

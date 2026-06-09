@@ -76,6 +76,10 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
         Log.d(MYLOGGER, "Trying to send crashlytics report");
         String reportType = dataMap.getString(DATA_MAP_REPORT_TYPE);
         String errorReport = dataMap.getString(DATA_MAP_ERROR);
+        if(reportType == null || reportType.length() == 0) {
+            Log.e(MYLOGGER, "Crashlytics report missing DATA_MAP_REPORT_TYPE");
+            return;
+        }
         if(errorReport == null || errorReport.length() == 0) {
             Log.e(MYLOGGER, "Crashlytics report missing DATA_MAP_ERROR");
             return;
