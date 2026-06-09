@@ -193,6 +193,11 @@ if ! grep -Fq "dataEvents == null || dataEvents.getStatus() == null" "$WEARABLE_
   exit 1
 fi
 
+if ! grep -Fq "releaseDataEvents(dataEvents)" "$WEARABLE_BROADCASTER"; then
+  printf '%s\n' "Wear event broadcaster must release DataEventBuffer callbacks." >&2
+  exit 1
+fi
+
 if ! grep -Fq "Ignoring unexpected wear event action" "$WEARABLE_RECEIVER"; then
   printf '%s\n' "Wear event receiver must reject unexpected broadcast actions." >&2
   exit 1
@@ -261,6 +266,11 @@ fi
 
 if ! grep -Fq "./gradlew check" "$README"; then
   printf '%s\n' "README must document the Gradle check gate." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Wear data-change callbacks release their \`DataEventBuffer\`" "$README"; then
+  printf '%s\n' "README must document DataEventBuffer release behavior." >&2
   exit 1
 fi
 

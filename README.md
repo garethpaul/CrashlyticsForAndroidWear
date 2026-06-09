@@ -94,6 +94,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Crashlytics credentials when testing against Fabric.
 - Wear crash forwarding sends stack traces as text, package-scopes internal
   broadcasts, and disconnects GoogleApiClient clients after message sends.
+- Wear data-change callbacks release their `DataEventBuffer` after validation
+  so listener callbacks do not retain Google Play Services resources.
 - Mobile and wear lint keep only the old missing API database runner error and
   the intentional SDK 21 target warning suppressed; `./gradlew lint` should
   report zero module issues.

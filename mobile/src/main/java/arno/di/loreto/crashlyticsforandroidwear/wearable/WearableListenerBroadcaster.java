@@ -108,18 +108,23 @@ public class WearableListenerBroadcaster extends WearableListenerService {
      */
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
-        if (dataEvents == null || dataEvents.getStatus() == null) {
-            Log.e(MYLOGGER, "Ignoring data change without status");
-            return;
+        try {
+            if (dataEvents == null || dataEvents.getStatus() == null) {
+                Log.e(MYLOGGER, "Ignoring data change without status");
+                return;
+            }
+            Log.d(MYLOGGER, "onDataChanged"+ dataEvents.getStatus().getStatusMessage());
+            /*
+            Intent intent = new Intent(ACTION_NAME);
+            intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(dataEvents));
+            intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_DATA_CHANGED);
+            this.sendBroadcast(intent);
+            */
+            super.onDataChanged(dataEvents);
         }
-        Log.d(MYLOGGER, "onDataChanged"+ dataEvents.getStatus().getStatusMessage());
-        /*
-        Intent intent = new Intent(ACTION_NAME);
-        intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(dataEvents));
-        intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_DATA_CHANGED);
-        this.sendBroadcast(intent);
-        */
-        super.onDataChanged(dataEvents);
+        finally {
+            releaseDataEvents(dataEvents);
+        }
     }
 
     /**
@@ -147,6 +152,12 @@ public class WearableListenerBroadcaster extends WearableListenerService {
         Intent intent = new Intent(ACTION_NAME);
         intent.setPackage(getPackageName());
         return intent;
+    }
+
+    private static void releaseDataEvents(DataEventBuffer dataEvents) {
+        if (dataEvents != null) {
+            dataEvents.release();
+        }
     }
 
     /**
