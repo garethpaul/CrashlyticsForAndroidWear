@@ -97,6 +97,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   broadcasts, and disconnects GoogleApiClient clients after message sends.
 - Mobile Crashlytics receivers reject decoded reports without `ERROR` or
   `REPORT_TYPE` fields before writing Crashlytics metadata.
+- Wear reports are sent only with the declared CRASH or EXCEPTION report types
+  before they reach the paired mobile receiver.
 - Wear data-change callbacks release their `DataEventBuffer` after validation
   so listener callbacks do not retain Google Play Services resources.
 - Mobile and wear lint keep only the old missing API database runner error and

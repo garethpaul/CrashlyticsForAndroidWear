@@ -103,8 +103,12 @@ public class CrashlyticsWearIntentService extends IntentService {
             Log.e(MYLOGGER, "Ignoring crashlytics report without throwable");
             return;
         }
-        if (report_type == null) {
+        if (report_type == null || report_type.length() == 0) {
             Log.e(MYLOGGER, "Ignoring crashlytics report without report type");
+            return;
+        }
+        if (!isSupportedReportType(report_type)) {
+            Log.e(MYLOGGER, "Ignoring crashlytics report with unsupported report type");
             return;
         }
 
@@ -173,6 +177,10 @@ public class CrashlyticsWearIntentService extends IntentService {
         catch(IOException _ex){
             Log.e(MYLOGGER, "Crashlytics report failed", _ex);
         }
+    }
+
+    private static boolean isSupportedReportType(String reportType) {
+        return REPORT_TYPE_CRASH.equals(reportType) || REPORT_TYPE_EXCEPTION.equals(reportType);
     }
 
     private static String throwableToString(Throwable ex) throws IOException {

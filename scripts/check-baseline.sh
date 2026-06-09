@@ -10,6 +10,7 @@ README="$ROOT_DIR/README.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-crashlytics-wear-build-baseline.md"
 LINT_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gradle-lint-baseline.md"
 REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-crashlytics-report-type-guard.md"
+WEAR_REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-report-type-allowlist.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
 WEAR_LINT="$ROOT_DIR/wear/lint.xml"
@@ -36,6 +37,7 @@ for path in \
   "docs/plans/2026-06-08-crashlytics-wear-build-baseline.md" \
   "docs/plans/2026-06-08-gradle-lint-baseline.md" \
   "docs/plans/2026-06-09-crashlytics-report-type-guard.md" \
+  "docs/plans/2026-06-09-wear-report-type-allowlist.md" \
   "gradlew" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "settings.gradle" \
@@ -231,6 +233,22 @@ if ! grep -Fq "errorExtra instanceof Throwable" "$WEAR_SERVICE"; then
   exit 1
 fi
 
+if ! grep -Fq "report_type == null || report_type.length() == 0" "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear service must reject missing or empty report types." >&2
+  exit 1
+fi
+
+if ! grep -Fq "private static boolean isSupportedReportType" "$WEAR_SERVICE" ||
+  ! grep -Fq "REPORT_TYPE_CRASH.equals(reportType) || REPORT_TYPE_EXCEPTION.equals(reportType)" "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear service must allow only declared Crashlytics report types." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Ignoring crashlytics report with unsupported report type" "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear service must log unsupported report type rejections without forwarding them." >&2
+  exit 1
+fi
+
 if ! grep -Fq "mApiClient.disconnect()" "$WEAR_SERVICE"; then
   printf '%s\n' "Wear service must disconnect GoogleApiClient after sends." >&2
   exit 1
@@ -287,6 +305,11 @@ if ! grep -Fq "Mobile Crashlytics receivers reject decoded reports without" "$RE
   exit 1
 fi
 
+if ! grep -Fq "Wear reports are sent only with the declared CRASH or EXCEPTION report types" "$README"; then
+  printf '%s\n' "README must document the wear report type allowlist." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN"; then
   printf '%s\n' "Plan must be marked completed." >&2
   exit 1
@@ -299,6 +322,16 @@ fi
 
 if ! grep -Fq "status: completed" "$REPORT_TYPE_PLAN"; then
   printf '%s\n' "Report type plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$WEAR_REPORT_TYPE_PLAN"; then
+  printf '%s\n' "Wear report type allowlist plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$WEAR_REPORT_TYPE_PLAN"; then
+  printf '%s\n' "Wear report type allowlist plan must record make check verification." >&2
   exit 1
 fi
 

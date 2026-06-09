@@ -19,6 +19,7 @@ Priority:
 
 - Preserve the uncaught-exception-to-wear-message flow
 - Keep Crashlytics handling separated from other wearable messages
+- Keep Wear report types constrained to declared crash/exception values
 - Reject incomplete decoded crash reports before writing mobile Crashlytics
   metadata
 - Avoid committing Fabric or Crashlytics credentials
