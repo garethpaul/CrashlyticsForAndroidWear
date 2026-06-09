@@ -113,7 +113,7 @@ public class CrashlyticsWearIntentService extends IntentService {
         }
 
         Throwable ex = (Throwable) errorExtra;
-        Log.d(MYLOGGER, "Received error", ex);
+        Log.d(MYLOGGER, "Received crashlytics report");
 
         DataMap dataMap = new DataMap();
 

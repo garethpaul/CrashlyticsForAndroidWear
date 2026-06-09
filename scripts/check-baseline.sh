@@ -11,6 +11,7 @@ PLAN="$ROOT_DIR/docs/plans/2026-06-08-crashlytics-wear-build-baseline.md"
 LINT_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gradle-lint-baseline.md"
 REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-crashlytics-report-type-guard.md"
 WEAR_REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-report-type-allowlist.md"
+WEAR_THROWABLE_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-throwable-log-redaction.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
 WEAR_LINT="$ROOT_DIR/wear/lint.xml"
@@ -38,6 +39,7 @@ for path in \
   "docs/plans/2026-06-08-gradle-lint-baseline.md" \
   "docs/plans/2026-06-09-crashlytics-report-type-guard.md" \
   "docs/plans/2026-06-09-wear-report-type-allowlist.md" \
+  "docs/plans/2026-06-09-wear-throwable-log-redaction.md" \
   "gradlew" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "settings.gradle" \
@@ -176,6 +178,16 @@ if ! grep -Fq "throwableToString" "$WEAR_SERVICE"; then
   exit 1
 fi
 
+if grep -Fq 'Log.d(MYLOGGER, "Received error", ex)' "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear service must not log throwable stack traces before forwarding reports." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Log.d(MYLOGGER, "Received crashlytics report")' "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear service must keep non-sensitive receipt logging for crash reports." >&2
+  exit 1
+fi
+
 if ! grep -Fq "intent.setPackage(getPackageName())" "$WEARABLE_BROADCASTER"; then
   printf '%s\n' "Wear event broadcasts must be package-scoped." >&2
   exit 1
@@ -310,6 +322,11 @@ if ! grep -Fq "Wear reports are sent only with the declared CRASH or EXCEPTION r
   exit 1
 fi
 
+if ! grep -Fq "Wear throwable stack traces are serialized for the phone" "$README"; then
+  printf '%s\n' "README must document throwable log redaction." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN"; then
   printf '%s\n' "Plan must be marked completed." >&2
   exit 1
@@ -332,6 +349,16 @@ fi
 
 if ! grep -Fq "make check" "$WEAR_REPORT_TYPE_PLAN"; then
   printf '%s\n' "Wear report type allowlist plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$WEAR_THROWABLE_LOG_PLAN"; then
+  printf '%s\n' "Wear throwable log redaction plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$WEAR_THROWABLE_LOG_PLAN"; then
+  printf '%s\n' "Wear throwable log redaction plan must record make check verification." >&2
   exit 1
 fi
 

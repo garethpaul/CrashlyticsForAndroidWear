@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Removed local debug logging of Wear throwable stack traces before forwarding
+  Crashlytics reports to the paired phone.
 - Allowed Wear crash reports through the sender only when their report type is
   one of the declared `CRASH` or `EXCEPTION` values.
 - Guarded mobile Crashlytics report forwarding against decoded Wear payloads
