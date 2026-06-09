@@ -208,6 +208,11 @@ public class CrashlyticsWearIntentService extends IntentService {
      * @param dataMap The dataMap containing the crash or exception data
      */
     private void sendMessage(String path, DataMap dataMap) {
+        if (path == null || path.length() == 0 || dataMap == null) {
+            Log.e(MYLOGGER, "Ignoring crashlytics report without send target");
+            return;
+        }
+
         GoogleApiClient mApiClient = new GoogleApiClient.Builder(CrashlyticsWearIntentService.this)
                 .addApi( Wearable.API )
                 .build();
@@ -220,8 +225,17 @@ public class CrashlyticsWearIntentService extends IntentService {
             Log.d(MYLOGGER, "Connected to Google API");
 
             NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
+            if (nodes == null || nodes.getNodes() == null) {
+                Log.e(MYLOGGER, "No connected nodes available for crashlytics report");
+                return;
+            }
             Log.d(MYLOGGER, "Connected nodes size "+nodes.getNodes().size());
             for(Node node : nodes.getNodes()) {
+                if (node == null || node.getId() == null || node.getId().length() == 0) {
+                    Log.e(MYLOGGER, "Skipping connected node without id");
+                    continue;
+                }
+
                 MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
                         mApiClient, node.getId(), path, dataMap.toByteArray() ).await();
                 if(result.getStatus().isSuccess()) {

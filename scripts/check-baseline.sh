@@ -13,6 +13,7 @@ REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-crashlytics-report-type-guard.
 WEAR_REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-report-type-allowlist.md"
 WEAR_THROWABLE_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-throwable-log-redaction.md"
 MOBILE_THROWABLE_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-09-mobile-throwable-log-redaction.md"
+WEAR_CONNECTED_NODE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-connected-node-send-guard.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
 WEAR_LINT="$ROOT_DIR/wear/lint.xml"
@@ -40,6 +41,7 @@ for path in \
   "docs/plans/2026-06-08-gradle-lint-baseline.md" \
   "docs/plans/2026-06-09-crashlytics-report-type-guard.md" \
   "docs/plans/2026-06-09-mobile-throwable-log-redaction.md" \
+  "docs/plans/2026-06-09-wear-connected-node-send-guard.md" \
   "docs/plans/2026-06-09-wear-report-type-allowlist.md" \
   "docs/plans/2026-06-09-wear-throwable-log-redaction.md" \
   "gradlew" \
@@ -278,8 +280,29 @@ if ! grep -Fq "mApiClient.disconnect()" "$WEAR_SERVICE"; then
   exit 1
 fi
 
-if ! grep -Fq "Ignoring dummy message without intent" "$DUMMY_SERVICE" || ! grep -Fq "Ignoring dummy message without payload" "$DUMMY_SERVICE"; then
+if ! grep -Fq "path == null || path.length() == 0 || dataMap == null" "$WEAR_SERVICE" ||
+  ! grep -Fq "No connected nodes available for crashlytics report" "$WEAR_SERVICE" ||
+  ! grep -Fq "Skipping connected node without id" "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear crash sender must guard missing send targets and connected-node ids." >&2
+  exit 1
+fi
+
+if ! grep -Fq "node == null || node.getId() == null || node.getId().length() == 0" "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear crash sender must skip connected nodes without ids." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Ignoring dummy message without intent" "$DUMMY_SERVICE" ||
+  ! grep -Fq "message == null || message.length() == 0" "$DUMMY_SERVICE" ||
+  ! grep -Fq "Ignoring dummy message without payload" "$DUMMY_SERVICE"; then
   printf '%s\n' "Dummy message sender must ignore missing intent and payload." >&2
+  exit 1
+fi
+
+if ! grep -Fq "path == null || path.length() == 0 || message == null || message.length() == 0" "$DUMMY_SERVICE" ||
+  ! grep -Fq "No connected nodes available for dummy message" "$DUMMY_SERVICE" ||
+  ! grep -Fq "Skipping dummy message node without id" "$DUMMY_SERVICE"; then
+  printf '%s\n' "Dummy message sender must guard missing send targets and connected-node ids." >&2
   exit 1
 fi
 
@@ -344,6 +367,11 @@ if ! grep -Fq "Mobile receivers log only the report type" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq "Wear message senders skip missing connected-node results and node ids" "$README"; then
+  printf '%s\n' "README must document connected-node send guards." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN"; then
   printf '%s\n' "Plan must be marked completed." >&2
   exit 1
@@ -386,6 +414,16 @@ fi
 
 if ! grep -Fq "make check" "$MOBILE_THROWABLE_LOG_PLAN"; then
   printf '%s\n' "Mobile throwable log redaction plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$WEAR_CONNECTED_NODE_PLAN"; then
+  printf '%s\n' "Wear connected node send guard plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$WEAR_CONNECTED_NODE_PLAN"; then
+  printf '%s\n' "Wear connected node send guard plan must record make check verification." >&2
   exit 1
 fi
 

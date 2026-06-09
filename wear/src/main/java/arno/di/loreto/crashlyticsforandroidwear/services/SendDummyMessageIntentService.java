@@ -45,7 +45,7 @@ public class SendDummyMessageIntentService extends IntentService {
         }
 
         String message = intent.getStringExtra(EXTRA_DATA_MESSAGE);
-        if (message == null) {
+        if (message == null || message.length() == 0) {
             Log.e(MYLOGGER, "Ignoring dummy message without payload");
             return;
         }
@@ -58,6 +58,11 @@ public class SendDummyMessageIntentService extends IntentService {
      * @param message The message to send
      */
     private void sendMessage(String path, String message) {
+        if (path == null || path.length() == 0 || message == null || message.length() == 0) {
+            Log.e(MYLOGGER, "Ignoring dummy message without send target");
+            return;
+        }
+
         GoogleApiClient mApiClient = new GoogleApiClient.Builder(this)
                 .addApi( Wearable.API )
                 .build();
@@ -70,8 +75,17 @@ public class SendDummyMessageIntentService extends IntentService {
             Log.d(MYLOGGER, "Connected to Google API");
 
             NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
+            if (nodes == null || nodes.getNodes() == null) {
+                Log.e(MYLOGGER, "No connected nodes available for dummy message");
+                return;
+            }
             Log.d(MYLOGGER, "Connected nodes size "+nodes.getNodes().size());
             for(Node node : nodes.getNodes()) {
+                if (node == null || node.getId() == null || node.getId().length() == 0) {
+                    Log.e(MYLOGGER, "Skipping dummy message node without id");
+                    continue;
+                }
+
                 MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
                         mApiClient, node.getId(), path, message.getBytes() ).await();
                 if(result.getStatus().isSuccess()) {

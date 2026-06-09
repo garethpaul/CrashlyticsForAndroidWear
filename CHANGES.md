@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Guarded Wear crash and dummy message senders against missing connected-node
+  results and node ids before Data Layer sends.
 - Removed mobile-side debug logging of reconstructed Wear throwable stack traces
   before forwarding reports to Crashlytics.
 - Removed local debug logging of Wear throwable stack traces before forwarding

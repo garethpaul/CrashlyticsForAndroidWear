@@ -24,6 +24,7 @@ Priority:
 - Avoid local debug logging of reconstructed Wear stack traces on the phone
 - Reject incomplete decoded crash reports before writing mobile Crashlytics
   metadata
+- Guard connected Wear nodes before sending Data Layer messages
 - Avoid committing Fabric or Crashlytics credentials
 - Maintain the mobile/wear module relationship
 

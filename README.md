@@ -105,6 +105,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Wear throwable payloads to Crashlytics.
 - Wear data-change callbacks release their `DataEventBuffer` after validation
   so listener callbacks do not retain Google Play Services resources.
+- Wear message senders skip missing connected-node results and node ids before
+  sending crash or dummy payloads through the Data Layer.
 - Mobile and wear lint keep only the old missing API database runner error and
   the intentional SDK 21 target warning suppressed; `./gradlew lint` should
   report zero module issues.
@@ -119,6 +121,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   throwable logging baseline.
 - See `docs/plans/2026-06-09-mobile-throwable-log-redaction.md` for mobile
   Crashlytics receipt log redaction.
+- See `docs/plans/2026-06-09-wear-connected-node-send-guard.md` for
+  connected-node send guards.
 
 ## Contributing
 
