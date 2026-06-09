@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Allowed mobile Crashlytics report forwarding only for declared `CRASH` or
+  `EXCEPTION` report types.
 - Replaced internal wearable event Java object serialization with typed Intent
   extras for peer and message broadcasts.
 - Guarded Wear crash and dummy Data Layer send loops against missing send

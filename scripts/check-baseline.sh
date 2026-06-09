@@ -17,6 +17,7 @@ WEAR_CONNECTED_NODE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-connected-node-se
 WEAR_EVENT_INTENT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-event-intent-extras.md"
 WEAR_SEND_RESULT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-send-result-status-guard.md"
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
+MOBILE_REPORT_TYPE_ALLOWLIST_PLAN="$ROOT_DIR/docs/plans/2026-06-09-mobile-report-type-allowlist.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 WEAR_MANIFEST="$ROOT_DIR/wear/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
@@ -49,6 +50,7 @@ for path in \
   "docs/plans/2026-06-09-wear-connected-node-send-guard.md" \
   "docs/plans/2026-06-09-wear-event-intent-extras.md" \
   "docs/plans/2026-06-09-wear-send-result-status-guard.md" \
+  "docs/plans/2026-06-09-mobile-report-type-allowlist.md" \
   "docs/plans/2026-06-09-wear-report-type-allowlist.md" \
   "docs/plans/2026-06-09-wear-throwable-log-redaction.md" \
   "gradlew" \
@@ -278,6 +280,13 @@ if ! grep -Fq "reportType == null || reportType.length() == 0" "$MOBILE_RECEIVER
   exit 1
 fi
 
+if ! grep -Fq "private static boolean isSupportedReportType" "$MOBILE_RECEIVER" ||
+  ! grep -Fq "REPORT_TYPE_CRASH.equals(reportType) || REPORT_TYPE_EXCEPTION.equals(reportType)" "$MOBILE_RECEIVER" ||
+  ! grep -Fq "Crashlytics report has unsupported DATA_MAP_REPORT_TYPE" "$MOBILE_RECEIVER"; then
+  printf '%s\n' "Mobile crash receiver must allow only declared Crashlytics report types." >&2
+  exit 1
+fi
+
 if grep -Fq 'Log.d(MYLOGGER, "Crash report received from wear device: type=" + reportType, wearReport)' "$MOBILE_RECEIVER"; then
   printf '%s\n' "Mobile crash receiver must not log reconstructed wear stack traces before Crashlytics forwarding." >&2
   exit 1
@@ -403,6 +412,11 @@ if ! grep -Fq "Mobile Crashlytics receivers reject decoded reports without" "$RE
   exit 1
 fi
 
+if ! grep -Fq "Mobile Crashlytics receivers reject unsupported report types" "$README"; then
+  printf '%s\n' "README must document mobile report type allowlisting." >&2
+  exit 1
+fi
+
 if ! grep -Fq "Wear reports are sent only with the declared CRASH or EXCEPTION report types" "$README"; then
   printf '%s\n' "README must document the wear report type allowlist." >&2
   exit 1
@@ -510,6 +524,16 @@ fi
 
 if ! grep -Fq "make check" "$WEAR_SEND_RESULT_PLAN"; then
   printf '%s\n' "Wear send result status guard plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$MOBILE_REPORT_TYPE_ALLOWLIST_PLAN"; then
+  printf '%s\n' "Mobile report type allowlist plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$MOBILE_REPORT_TYPE_ALLOWLIST_PLAN"; then
+  printf '%s\n' "Mobile report type allowlist plan must record make check verification." >&2
   exit 1
 fi
 

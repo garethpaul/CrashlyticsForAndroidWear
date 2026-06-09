@@ -97,6 +97,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   broadcasts, and disconnects GoogleApiClient clients after message sends.
 - Mobile Crashlytics receivers reject decoded reports without `ERROR` or
   `REPORT_TYPE` fields before writing Crashlytics metadata.
+- Mobile Crashlytics receivers reject unsupported report types before writing
+  Crashlytics metadata.
 - Wear reports are sent only with the declared CRASH or EXCEPTION report types
   before they reach the paired mobile receiver.
 - Wear throwable stack traces are serialized for the phone without local debug
@@ -123,6 +125,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   verification wrapper baseline.
 - See `docs/plans/2026-06-09-crashlytics-report-type-guard.md` for the mobile
   Crashlytics report type validation guard.
+- See `docs/plans/2026-06-09-mobile-report-type-allowlist.md` for mobile
+  Crashlytics report type allowlisting.
 - See `docs/plans/2026-06-09-wear-throwable-log-redaction.md` for the Wear
   throwable logging baseline.
 - See `docs/plans/2026-06-09-mobile-throwable-log-redaction.md` for mobile

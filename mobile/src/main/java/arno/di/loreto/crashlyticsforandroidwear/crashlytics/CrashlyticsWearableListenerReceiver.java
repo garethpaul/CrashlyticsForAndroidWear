@@ -28,6 +28,8 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
     public static final String DATA_MAP_ERROR = "ERROR";
     public static final String DATA_MAP_REPORT_TYPE = "REPORT_TYPE";
     public static final String CRASH_DATA_WEAR = "WEAR_REPORT";
+    private static final String REPORT_TYPE_CRASH = "CRASH";
+    private static final String REPORT_TYPE_EXCEPTION = "EXCEPTION";
 
     @Override
     public void onCreate(Context context) {
@@ -80,6 +82,10 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
             Log.e(MYLOGGER, "Crashlytics report missing DATA_MAP_REPORT_TYPE");
             return;
         }
+        if(!isSupportedReportType(reportType)) {
+            Log.e(MYLOGGER, "Crashlytics report has unsupported DATA_MAP_REPORT_TYPE");
+            return;
+        }
         if(errorReport == null || errorReport.length() == 0) {
             Log.e(MYLOGGER, "Crashlytics report missing DATA_MAP_ERROR");
             return;
@@ -98,5 +104,9 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
         //Is there a way to send a real crash report instead of log exception?
         Crashlytics.logException(wearReport);
         Log.d(MYLOGGER, "Crashlytics report sent");
+    }
+
+    private static boolean isSupportedReportType(String reportType) {
+        return REPORT_TYPE_CRASH.equals(reportType) || REPORT_TYPE_EXCEPTION.equals(reportType);
     }
 }
