@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Replaced internal wearable event Java object serialization with typed Intent
+  extras for peer and message broadcasts.
 - Guarded Wear crash and dummy Data Layer send loops against missing send
   results or status objects before reading status details.
 - Disabled mobile and wear app-data backup in the checked-in manifests and

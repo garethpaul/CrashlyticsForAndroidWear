@@ -2,19 +2,21 @@ package arno.di.loreto.crashlyticsforandroidwear.wearable;
 
 import com.google.android.gms.wearable.Node;
 
-import java.io.Serializable;
-
 /**
- * Node is not serializable, so here is a Serializable version.
+ * Node is not mutable, so this copies the fields needed by receivers.
  */
-public class SerializableNode implements Serializable, Node {
+public class SerializableNode implements Node {
 
     private String displayName;
     private String id;
 
     public SerializableNode(Node peer){
-        displayName = peer.getDisplayName();
-        id = peer.getId();
+        this(peer.getDisplayName(), peer.getId());
+    }
+
+    public SerializableNode(String displayName, String id){
+        this.displayName = displayName;
+        this.id = id;
     }
 
     public String getDisplayName() {

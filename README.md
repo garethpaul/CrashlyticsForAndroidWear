@@ -105,6 +105,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Wear throwable payloads to Crashlytics.
 - Wear data-change callbacks release their `DataEventBuffer` after validation
   so listener callbacks do not retain Google Play Services resources.
+- Internal Wear listener broadcasts use typed Intent extras instead of Java object serialization
+  for peer and message fields.
 - Wear message senders skip missing connected-node results and node ids before
   sending crash or dummy payloads through the Data Layer.
 - Wear message senders skip missing send results and statuses before reading
@@ -127,6 +129,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Crashlytics receipt log redaction.
 - See `docs/plans/2026-06-09-wear-connected-node-send-guard.md` for
   connected-node send guards.
+- See `docs/plans/2026-06-09-wear-event-intent-extras.md` for internal Wear
+  event broadcast payloads.
 - See `docs/plans/2026-06-09-wear-send-result-status-guard.md` for send result
   status guards.
 - See `docs/plans/2026-06-09-android-backup-opt-out.md` for the mobile and

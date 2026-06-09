@@ -9,10 +9,6 @@ import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Node;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-
 /**
  * A "Wear event" receiver.
  * Subclass it to create your own receiver, don't forget to declare it in the manifest like this:
@@ -62,32 +58,23 @@ public class WearableListenerReceiver extends BroadcastReceiver {
             return;
         }
 
-        byte[] bytes = intent.getByteArrayExtra(WearableListenerBroadcaster.EXTRA_DATA_EVENT);
-        if (bytes == null) {
-            Log.e(MYLOGGER, "Ignoring wear event without payload: " + eventType);
-            return;
-        }
-
         if(eventType != null && eventType.equalsIgnoreCase(WearableListenerBroadcaster.EVENT_TYPE_ON_MESSAGE_RECEIVED)){
-            MessageEvent messageEvent = getObjectFromByteArray(bytes, MessageEvent.class);
+            MessageEvent messageEvent = getMessageEvent(intent, eventType);
             if (messageEvent != null) {
                 onMessageReceived(context, messageEvent);
             }
         }
         else if(eventType != null && eventType.equalsIgnoreCase(WearableListenerBroadcaster.EVENT_TYPE_ON_DATA_CHANGED)){
-            DataEventBuffer dataEvents = getObjectFromByteArray(bytes, DataEventBuffer.class);
-            if (dataEvents != null) {
-                onDataChanged(context, dataEvents);
-            }
+            Log.e(MYLOGGER, "Ignoring wear event without payload: " + eventType);
         }
         else if(eventType != null && eventType.equalsIgnoreCase(WearableListenerBroadcaster.EVENT_TYPE_ON_PEER_CONNECTED)){
-            Node peer = getObjectFromByteArray(bytes, Node.class);
+            Node peer = getNode(intent, eventType);
             if (peer != null) {
                 onPeerConnected(context, peer);
             }
         }
         else if(eventType != null && eventType.equalsIgnoreCase(WearableListenerBroadcaster.EVENT_TYPE_ON_PEER_DISCONNECTED)){
-            Node peer = getObjectFromByteArray(bytes, Node.class);
+            Node peer = getNode(intent, eventType);
             if (peer != null) {
                 onPeerDisconnected(context, peer);
             }
@@ -98,46 +85,27 @@ public class WearableListenerReceiver extends BroadcastReceiver {
 
     }
 
-    /**
-     * Gets the real object from the byte array.
-     * @param byteArray
-     * @param T
-     * @param <T>
-     * @return
-     */
-    private<T> T getObjectFromByteArray(byte[] byteArray, Class<T> T){
-        T result = null;
-        ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
-        ObjectInputStream ois = null;
-        try {
-            ois = new ObjectInputStream(bis);
-            Object object = ois.readObject();
-            if (object == null) {
-                Log.e(MYLOGGER, "Wear event payload was null");
-            }
-            else if (T.isInstance(object)) {
-                result = T.cast(object);
-            }
-            else {
-                Log.e(MYLOGGER, "Unexpected wear event payload type: " + object.getClass().getName());
-            }
+    private MessageEvent getMessageEvent(Intent intent, String eventType){
+        String path = intent.getStringExtra(WearableListenerBroadcaster.EXTRA_DATA_PATH);
+        if (path == null) {
+            Log.e(MYLOGGER, "Ignoring wear event without payload: " + eventType);
+            return null;
         }
-        catch (IOException e) {
-            Log.e(MYLOGGER, "Unable to deserialize wear event payload", e);
+        return new SerializableMessageEvent(
+                intent.getByteArrayExtra(WearableListenerBroadcaster.EXTRA_MESSAGE_DATA),
+                path,
+                intent.getIntExtra(WearableListenerBroadcaster.EXTRA_MESSAGE_REQUEST_ID, 0),
+                intent.getStringExtra(WearableListenerBroadcaster.EXTRA_MESSAGE_SOURCE_NODE_ID));
+    }
+
+    private Node getNode(Intent intent, String eventType){
+        String nodeId = intent.getStringExtra(WearableListenerBroadcaster.EXTRA_NODE_ID);
+        if (nodeId == null) {
+            Log.e(MYLOGGER, "Ignoring wear event without payload: " + eventType);
+            return null;
         }
-        catch (ClassNotFoundException e) {
-            Log.e(MYLOGGER, "Unable to deserialize wear event payload", e);
-        }
-        finally {
-            try {
-                if (ois != null) {
-                    ois.close();
-                }
-            }
-            catch (IOException e) {
-                Log.e(MYLOGGER, "Unable to close wear event payload stream", e);
-            }
-        }
-        return result;
+        return new SerializableNode(
+                intent.getStringExtra(WearableListenerBroadcaster.EXTRA_NODE_DISPLAY_NAME),
+                nodeId);
     }
 }

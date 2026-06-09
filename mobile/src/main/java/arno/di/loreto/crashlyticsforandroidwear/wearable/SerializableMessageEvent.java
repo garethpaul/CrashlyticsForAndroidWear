@@ -2,12 +2,10 @@ package arno.di.loreto.crashlyticsforandroidwear.wearable;
 
 import com.google.android.gms.wearable.MessageEvent;
 
-import java.io.Serializable;
-
 /**
- * MessageEvent is not serializable, so here is a Serializable version.
+ * MessageEvent is not mutable, so this copies the fields needed by receivers.
  */
-public class SerializableMessageEvent implements MessageEvent, Serializable {
+public class SerializableMessageEvent implements MessageEvent {
 
     private byte[] data;
     private String path;
@@ -15,10 +13,14 @@ public class SerializableMessageEvent implements MessageEvent, Serializable {
     private String sourceNodeId;
 
     public SerializableMessageEvent(MessageEvent messageEvent){
-        data = messageEvent.getData();
-        path = messageEvent.getPath();
-        requestId = messageEvent.getRequestId();
-        sourceNodeId = messageEvent.getSourceNodeId();
+        this(messageEvent.getData(), messageEvent.getPath(), messageEvent.getRequestId(), messageEvent.getSourceNodeId());
+    }
+
+    public SerializableMessageEvent(byte[] data, String path, int requestId, String sourceNodeId){
+        this.data = data;
+        this.path = path;
+        this.requestId = requestId;
+        this.sourceNodeId = sourceNodeId;
     }
 
     public byte[] getData() {

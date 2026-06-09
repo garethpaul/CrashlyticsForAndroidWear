@@ -8,10 +8,6 @@ import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.WearableListenerService;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-
 /**
  * The (only) WearableListenerService which will received message from the watch.
  * He will broadcast all events to receivers (WearableListenerReceiver subclass)
@@ -35,9 +31,13 @@ public class WearableListenerBroadcaster extends WearableListenerService {
 
     public static final String ACTION_NAME = "arno.di.loreto.wearmessage";
 
-    public static final String EXTRA_DATA_EVENT = "EVENT";
     public static final String EXTRA_DATA_EVENT_TYPE = "EVENT_TYPE";
     public static final String EXTRA_DATA_PATH = "EVENT_PATH";
+    public static final String EXTRA_MESSAGE_DATA = "MESSAGE_DATA";
+    public static final String EXTRA_MESSAGE_REQUEST_ID = "MESSAGE_REQUEST_ID";
+    public static final String EXTRA_MESSAGE_SOURCE_NODE_ID = "MESSAGE_SOURCE_NODE_ID";
+    public static final String EXTRA_NODE_DISPLAY_NAME = "NODE_DISPLAY_NAME";
+    public static final String EXTRA_NODE_ID = "NODE_ID";
 
     public static final String EVENT_TYPE_ON_MESSAGE_RECEIVED = "ON_MESSAGE_RECEIVED";
     public static final String EVENT_TYPE_ON_DATA_CHANGED = "ON_DATA_CHANGED";
@@ -58,7 +58,8 @@ public class WearableListenerBroadcaster extends WearableListenerService {
         }
         Log.d(MYLOGGER, "onPeerDisconnected "+ peer.getDisplayName());
         Intent intent = newWearEventIntent();
-        intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(new SerializableNode(peer)));
+        intent.putExtra(EXTRA_NODE_DISPLAY_NAME, peer.getDisplayName());
+        intent.putExtra(EXTRA_NODE_ID, peer.getId());
         intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_PEER_DISCONNECTED);
         this.sendBroadcast(intent);
         super.onPeerDisconnected(peer);
@@ -76,7 +77,8 @@ public class WearableListenerBroadcaster extends WearableListenerService {
         }
         Log.d(MYLOGGER, "onPeerConnected "+ peer.getDisplayName());
         Intent intent = newWearEventIntent();
-        intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(new SerializableNode(peer)));
+        intent.putExtra(EXTRA_NODE_DISPLAY_NAME, peer.getDisplayName());
+        intent.putExtra(EXTRA_NODE_ID, peer.getId());
         intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_PEER_CONNECTED);
         this.sendBroadcast(intent);
         super.onPeerConnected(peer);
@@ -94,9 +96,11 @@ public class WearableListenerBroadcaster extends WearableListenerService {
         }
         Log.d(MYLOGGER, "onMessageReceived, path="+messageEvent.getPath());
         Intent intent = newWearEventIntent();
-        intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(new SerializableMessageEvent(messageEvent)));
         intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_MESSAGE_RECEIVED);
         intent.putExtra(EXTRA_DATA_PATH, messageEvent.getPath());
+        intent.putExtra(EXTRA_MESSAGE_DATA, messageEvent.getData());
+        intent.putExtra(EXTRA_MESSAGE_REQUEST_ID, messageEvent.getRequestId());
+        intent.putExtra(EXTRA_MESSAGE_SOURCE_NODE_ID, messageEvent.getSourceNodeId());
         Log.d(MYLOGGER, "Broadcasting to " + ACTION_NAME);
         this.sendBroadcast(intent);
         super.onMessageReceived(messageEvent);
@@ -116,7 +120,6 @@ public class WearableListenerBroadcaster extends WearableListenerService {
             Log.d(MYLOGGER, "onDataChanged"+ dataEvents.getStatus().getStatusMessage());
             /*
             Intent intent = new Intent(ACTION_NAME);
-            intent.putExtra(EXTRA_DATA_EVENT, objectToByArray(dataEvents));
             intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_DATA_CHANGED);
             this.sendBroadcast(intent);
             */
@@ -158,35 +161,5 @@ public class WearableListenerBroadcaster extends WearableListenerService {
         if (dataEvents != null) {
             dataEvents.release();
         }
-    }
-
-    /**
-     * Get byte array for an object.
-     * It seems using Parcelable instead of Serialazable could me better (TODO)
-     * @param object The object
-     * @return the byte array
-     */
-    private static byte[] objectToByArray(Object object) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = null;
-        try {
-            oos = new ObjectOutputStream(bos);
-            oos.writeObject(object);
-        }
-        catch (IOException _ex) {
-            Log.e(MYLOGGER, "object to byte array failed", _ex);
-        }
-        finally {
-            try {
-                if (oos != null)
-                    oos.close();
-            }
-            catch (IOException _ex) {}
-            try {
-                bos.close();
-            }
-            catch (IOException _ex) {}
-        }
-        return bos.toByteArray();
     }
 }
