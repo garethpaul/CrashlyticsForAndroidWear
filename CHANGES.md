@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Disabled mobile and wear app-data backup in the checked-in manifests and
+  added baseline coverage for the opt-out.
 - Guarded Wear crash and dummy message senders against missing connected-node
   results and node ids before Data Layer sends.
 - Removed mobile-side debug logging of reconstructed Wear throwable stack traces

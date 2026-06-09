@@ -25,6 +25,7 @@ Priority:
 - Reject incomplete decoded crash reports before writing mobile Crashlytics
   metadata
 - Guard connected Wear nodes before sending Data Layer messages
+- Keep mobile and wear app-data backup disabled by default
 - Avoid committing Fabric or Crashlytics credentials
 - Maintain the mobile/wear module relationship
 

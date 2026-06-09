@@ -14,7 +14,9 @@ WEAR_REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-report-type-allowlis
 WEAR_THROWABLE_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-throwable-log-redaction.md"
 MOBILE_THROWABLE_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-09-mobile-throwable-log-redaction.md"
 WEAR_CONNECTED_NODE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-connected-node-send-guard.md"
+ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
+WEAR_MANIFEST="$ROOT_DIR/wear/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
 WEAR_LINT="$ROOT_DIR/wear/lint.xml"
 MOBILE_RECEIVER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrashlyticsWearableListenerReceiver.java"
@@ -41,6 +43,7 @@ for path in \
   "docs/plans/2026-06-08-gradle-lint-baseline.md" \
   "docs/plans/2026-06-09-crashlytics-report-type-guard.md" \
   "docs/plans/2026-06-09-mobile-throwable-log-redaction.md" \
+  "docs/plans/2026-06-09-android-backup-opt-out.md" \
   "docs/plans/2026-06-09-wear-connected-node-send-guard.md" \
   "docs/plans/2026-06-09-wear-report-type-allowlist.md" \
   "docs/plans/2026-06-09-wear-throwable-log-redaction.md" \
@@ -141,6 +144,14 @@ if ! grep -Fq 'android:exported="false"' "$MOBILE_MANIFEST"; then
   printf '%s\n' "Crashlytics broadcast receivers must be non-exported." >&2
   exit 1
 fi
+
+for manifest in "$MOBILE_MANIFEST" "$WEAR_MANIFEST"; do
+  if grep -Fq 'android:allowBackup="true"' "$manifest" ||
+    ! grep -Fq 'android:allowBackup="false"' "$manifest"; then
+    printf '%s\n' "Mobile and wear manifests must explicitly disable app-data backup." >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq 'tools:ignore="ExportedService"' "$MOBILE_MANIFEST"; then
   printf '%s\n' "WearableListenerService exported-service lint warning must be explicitly documented." >&2
@@ -372,6 +383,11 @@ if ! grep -Fq "Wear message senders skip missing connected-node results and node
   exit 1
 fi
 
+if ! grep -Fq "Mobile and wear app-data backup is disabled" "$README"; then
+  printf '%s\n' "README must document the Android backup opt-out." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN"; then
   printf '%s\n' "Plan must be marked completed." >&2
   exit 1
@@ -424,6 +440,16 @@ fi
 
 if ! grep -Fq "make check" "$WEAR_CONNECTED_NODE_PLAN"; then
   printf '%s\n' "Wear connected node send guard plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$ANDROID_BACKUP_PLAN"; then
+  printf '%s\n' "Android backup opt-out plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ANDROID_BACKUP_PLAN"; then
+  printf '%s\n' "Android backup opt-out plan must record make check verification." >&2
   exit 1
 fi
 
