@@ -12,6 +12,7 @@ LINT_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gradle-lint-baseline.md"
 REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-crashlytics-report-type-guard.md"
 WEAR_REPORT_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-report-type-allowlist.md"
 WEAR_THROWABLE_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-throwable-log-redaction.md"
+MOBILE_THROWABLE_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-09-mobile-throwable-log-redaction.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
 WEAR_LINT="$ROOT_DIR/wear/lint.xml"
@@ -38,6 +39,7 @@ for path in \
   "docs/plans/2026-06-08-crashlytics-wear-build-baseline.md" \
   "docs/plans/2026-06-08-gradle-lint-baseline.md" \
   "docs/plans/2026-06-09-crashlytics-report-type-guard.md" \
+  "docs/plans/2026-06-09-mobile-throwable-log-redaction.md" \
   "docs/plans/2026-06-09-wear-report-type-allowlist.md" \
   "docs/plans/2026-06-09-wear-throwable-log-redaction.md" \
   "gradlew" \
@@ -235,6 +237,16 @@ if ! grep -Fq "reportType == null || reportType.length() == 0" "$MOBILE_RECEIVER
   exit 1
 fi
 
+if grep -Fq 'Log.d(MYLOGGER, "Crash report received from wear device: type=" + reportType, wearReport)' "$MOBILE_RECEIVER"; then
+  printf '%s\n' "Mobile crash receiver must not log reconstructed wear stack traces before Crashlytics forwarding." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Log.d(MYLOGGER, "Crash report received from wear device: type=" + reportType)' "$MOBILE_RECEIVER"; then
+  printf '%s\n' "Mobile crash receiver must keep non-sensitive report type receipt logging." >&2
+  exit 1
+fi
+
 if ! grep -Fq "CrashlyticsWear.init(Application) must be called" "$WEAR_API"; then
   printf '%s\n' "Wear API must guard logException before initialization." >&2
   exit 1
@@ -327,6 +339,11 @@ if ! grep -Fq "Wear throwable stack traces are serialized for the phone" "$READM
   exit 1
 fi
 
+if ! grep -Fq "Mobile receivers log only the report type" "$README"; then
+  printf '%s\n' "README must document mobile throwable log redaction." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN"; then
   printf '%s\n' "Plan must be marked completed." >&2
   exit 1
@@ -359,6 +376,16 @@ fi
 
 if ! grep -Fq "make check" "$WEAR_THROWABLE_LOG_PLAN"; then
   printf '%s\n' "Wear throwable log redaction plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$MOBILE_THROWABLE_LOG_PLAN"; then
+  printf '%s\n' "Mobile throwable log redaction plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$MOBILE_THROWABLE_LOG_PLAN"; then
+  printf '%s\n' "Mobile throwable log redaction plan must record make check verification." >&2
   exit 1
 fi
 

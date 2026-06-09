@@ -21,6 +21,7 @@ Priority:
 - Keep Crashlytics handling separated from other wearable messages
 - Keep Wear report types constrained to declared crash/exception values
 - Avoid local debug logging of throwable stack traces on the wear device
+- Avoid local debug logging of reconstructed Wear stack traces on the phone
 - Reject incomplete decoded crash reports before writing mobile Crashlytics
   metadata
 - Avoid committing Fabric or Crashlytics credentials

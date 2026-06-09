@@ -101,6 +101,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   before they reach the paired mobile receiver.
 - Wear throwable stack traces are serialized for the phone without local debug
   logging before the report is forwarded.
+- Mobile receivers log only the report type before forwarding reconstructed
+  Wear throwable payloads to Crashlytics.
 - Wear data-change callbacks release their `DataEventBuffer` after validation
   so listener callbacks do not retain Google Play Services resources.
 - Mobile and wear lint keep only the old missing API database runner error and
@@ -115,6 +117,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Crashlytics report type validation guard.
 - See `docs/plans/2026-06-09-wear-throwable-log-redaction.md` for the Wear
   throwable logging baseline.
+- See `docs/plans/2026-06-09-mobile-throwable-log-redaction.md` for mobile
+  Crashlytics receipt log redaction.
 
 ## Contributing
 

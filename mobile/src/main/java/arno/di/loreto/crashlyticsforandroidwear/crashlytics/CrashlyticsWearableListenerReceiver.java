@@ -86,7 +86,7 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
         }
 
         RuntimeException wearReport = new RuntimeException(errorReport);
-        Log.d(MYLOGGER, "Crash report received from wear device: type=" + reportType, wearReport);
+        Log.d(MYLOGGER, "Crash report received from wear device: type=" + reportType);
         Crashlytics.setBool(CRASH_DATA_WEAR, Boolean.TRUE);
         for(Iterator<String> i = dataMap.keySet().iterator(); i.hasNext();){
             String key = i.next();
