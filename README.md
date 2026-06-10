@@ -12,6 +12,7 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 ## Repository Contents
 
 - `README.md` - project overview and local usage notes
+- `.github/workflows/check.yml` - GitHub Actions baseline for `make check`
 - `build.gradle` - Android or Gradle build configuration
 - `gradle` - source or example code
 - `gradlew` - Android or Gradle build configuration
@@ -56,6 +57,12 @@ Run the source-level baseline guard before committing:
 make check
 scripts/check-baseline.sh
 ```
+
+GitHub Actions runs `make check` on pushes, pull requests, and manual
+dispatches. The workflow uses a commit-pinned checkout action, read-only
+repository access, and a bounded runtime. It explicitly clears hosted Android
+SDK variables so Gradle 1.12 and the discontinued Fabric/JCenter stack are not
+invoked by an incompatible modern runner image.
 
 When the legacy Android toolchain can resolve all discontinued artifacts, use:
 
@@ -139,6 +146,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   status guards.
 - See `docs/plans/2026-06-09-android-backup-opt-out.md` for the mobile and
   wear app-data backup opt-out.
+- See `docs/plans/2026-06-10-ci-baseline.md` for the lightweight GitHub
+  Actions baseline.
 
 ## Contributing
 

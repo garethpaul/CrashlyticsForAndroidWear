@@ -31,6 +31,7 @@ Priority:
 - Guard Wear Data Layer send results before reading status details
 - Keep mobile and wear app-data backup disabled by default
 - Avoid committing Fabric or Crashlytics credentials
+- Keep the SDK-free `make check` baseline running in GitHub Actions
 - Maintain the mobile/wear module relationship
 
 Next priorities:

@@ -18,6 +18,7 @@ WEAR_EVENT_INTENT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-event-intent-extras
 WEAR_SEND_RESULT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-send-result-status-guard.md"
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 MOBILE_REPORT_TYPE_ALLOWLIST_PLAN="$ROOT_DIR/docs/plans/2026-06-09-mobile-report-type-allowlist.md"
+CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 WEAR_MANIFEST="$ROOT_DIR/wear/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
@@ -40,6 +41,7 @@ require_file() {
 
 for path in \
   ".gitignore" \
+  ".github/workflows/check.yml" \
   "CHANGES.md" \
   "README.md" \
   "docs/plans/2026-06-08-crashlytics-wear-build-baseline.md" \
@@ -53,6 +55,7 @@ for path in \
   "docs/plans/2026-06-09-mobile-report-type-allowlist.md" \
   "docs/plans/2026-06-09-wear-report-type-allowlist.md" \
   "docs/plans/2026-06-09-wear-throwable-log-redaction.md" \
+  "docs/plans/2026-06-10-ci-baseline.md" \
   "gradlew" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "settings.gradle" \
@@ -392,6 +395,35 @@ if ! grep -Fq "scripts/check-baseline.sh" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq "GitHub Actions" "$README"; then
+  printf '%s\n' "README must document the GitHub Actions check." >&2
+  exit 1
+fi
+
+if ! grep -Fq "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" "$ROOT_DIR/.github/workflows/check.yml" ||
+  ! grep -Fq "make check" "$ROOT_DIR/.github/workflows/check.yml"; then
+  printf '%s\n' "GitHub Actions check workflow must check out the repository and run make check." >&2
+  exit 1
+fi
+
+if ! grep -Fq "permissions:" "$ROOT_DIR/.github/workflows/check.yml" ||
+  ! grep -Fq "contents: read" "$ROOT_DIR/.github/workflows/check.yml"; then
+  printf '%s\n' "GitHub Actions check workflow must keep repository access read-only." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'ANDROID_HOME: ""' "$ROOT_DIR/.github/workflows/check.yml" ||
+  ! grep -Fq 'ANDROID_SDK_ROOT: ""' "$ROOT_DIR/.github/workflows/check.yml"; then
+  printf '%s\n' "GitHub Actions must clear hosted Android SDK variables for the legacy SDK-free baseline." >&2
+  exit 1
+fi
+
+if ! grep -Fq "workflow_dispatch:" "$ROOT_DIR/.github/workflows/check.yml" ||
+  ! grep -Fq "timeout-minutes: 5" "$ROOT_DIR/.github/workflows/check.yml"; then
+  printf '%s\n' "GitHub Actions check workflow must support bounded manual verification." >&2
+  exit 1
+fi
+
 if ! grep -Fq "./gradlew lint" "$README"; then
   printf '%s\n' "README must document the Gradle lint gate." >&2
   exit 1
@@ -544,6 +576,16 @@ fi
 
 if ! grep -Fq "make check" "$ANDROID_BACKUP_PLAN"; then
   printf '%s\n' "Android backup opt-out plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$CI_PLAN"; then
+  printf '%s\n' "CI baseline plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$CI_PLAN"; then
+  printf '%s\n' "CI baseline plan must record make check verification." >&2
   exit 1
 fi
 
