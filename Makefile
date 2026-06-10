@@ -1,33 +1,34 @@
 .PHONY: build check lint tasks test verify
 
+ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 ANDROID_HOME ?= /home/gjones/android-sdk
-GRADLE ?= ./gradlew
+GRADLE ?= $(ROOT)gradlew
 
 lint:
-	scripts/check-baseline.sh
+	$(ROOT)scripts/check-baseline.sh
 	@if [ -d "$(ANDROID_HOME)" ]; then \
-		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) lint --no-daemon; \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" lint --no-daemon; \
 	else \
 		echo "Android SDK not found at $(ANDROID_HOME); Gradle lint skipped."; \
 	fi
 
 test:
 	@if [ -d "$(ANDROID_HOME)" ]; then \
-		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) check --no-daemon; \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" check --no-daemon; \
 	else \
 		echo "Android SDK not found at $(ANDROID_HOME); Gradle check skipped."; \
 	fi
 
 tasks:
 	@if [ -d "$(ANDROID_HOME)" ]; then \
-		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) tasks --no-daemon; \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" tasks --no-daemon; \
 	else \
 		echo "Android SDK not found at $(ANDROID_HOME); Gradle tasks skipped."; \
 	fi
 
 build:
 	@if [ -d "$(ANDROID_HOME)" ]; then \
-		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) assembleDebug --no-daemon; \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" assembleDebug --no-daemon; \
 	else \
 		echo "Android SDK not found at $(ANDROID_HOME); Gradle build skipped."; \
 	fi

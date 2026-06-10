@@ -60,7 +60,7 @@ scripts/check-baseline.sh
 
 GitHub Actions runs `make check` on pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only
-repository access, and a bounded runtime. It explicitly clears hosted Android
+repository access, an Ubuntu 24.04 runner, and a bounded runtime. It explicitly clears hosted Android
 SDK variables so Gradle 1.12 and the discontinued Fabric/JCenter stack are not
 invoked by an incompatible modern runner image.
 
@@ -112,6 +112,11 @@ When the required SDK or runtime is unavailable, use static checks and source re
   logging before the report is forwarded.
 - Mobile receivers log only the report type before forwarding reconstructed
   Wear throwable payloads to Crashlytics.
+- Mobile receivers forward only the declared Wear device metadata keys to
+  Crashlytics, do not log their values, and reject arbitrary keys or non-string
+  metadata injection.
+- Wear crash reports omit the hardware serial identifier from forwarded device
+  metadata.
 - Wear data-change callbacks release their `DataEventBuffer` after validation
   so listener callbacks do not retain Google Play Services resources.
 - Internal Wear listener broadcasts use typed Intent extras instead of Java object serialization
@@ -148,6 +153,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   wear app-data backup opt-out.
 - See `docs/plans/2026-06-10-ci-baseline.md` for the lightweight GitHub
   Actions baseline.
+- See `docs/plans/2026-06-10-crash-metadata-privacy-boundary.md` for the
+  Crashlytics metadata allowlist and hardware identifier privacy boundary.
 
 ## Contributing
 

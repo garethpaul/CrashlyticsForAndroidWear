@@ -19,6 +19,8 @@ WEAR_SEND_RESULT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-send-result-status-g
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 MOBILE_REPORT_TYPE_ALLOWLIST_PLAN="$ROOT_DIR/docs/plans/2026-06-09-mobile-report-type-allowlist.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
+METADATA_PRIVACY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-crash-metadata-privacy-boundary.md"
+MAKEFILE="$ROOT_DIR/Makefile"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 WEAR_MANIFEST="$ROOT_DIR/wear/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
@@ -56,6 +58,7 @@ for path in \
   "docs/plans/2026-06-09-wear-report-type-allowlist.md" \
   "docs/plans/2026-06-09-wear-throwable-log-redaction.md" \
   "docs/plans/2026-06-10-ci-baseline.md" \
+  "docs/plans/2026-06-10-crash-metadata-privacy-boundary.md" \
   "gradlew" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "settings.gradle" \
@@ -380,6 +383,26 @@ if ! grep -Fq "result == null || result.getStatus() == null" "$DUMMY_SERVICE" ||
   exit 1
 fi
 
+if ! grep -Fq "ALLOWED_METADATA_KEYS" "$MOBILE_RECEIVER" ||
+  grep -Fq "dataMap.keySet()" "$MOBILE_RECEIVER"; then
+  printf '%s\n' "Mobile Crashlytics metadata must use a declared allowlist instead of payload-provided keys." >&2
+  exit 1
+fi
+
+if grep -Fq 'Log.d(MYLOGGER,"data_map."' "$MOBILE_RECEIVER" ||
+  grep -Fq 'Build.SERIAL' "$WEAR_SERVICE" ||
+  grep -Fq 'DATA_MAP_SERIAL' "$WEAR_SERVICE"; then
+  printf '%s\n' "Crash forwarding must not log metadata values or collect the hardware serial identifier." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Crashlytics.setString(DATA_MAP_REPORT_TYPE, reportType)" "$MOBILE_RECEIVER" ||
+  ! grep -Fq "for (String key : ALLOWED_METADATA_KEYS)" "$MOBILE_RECEIVER" ||
+  ! grep -Fq "catch (ClassCastException e)" "$MOBILE_RECEIVER"; then
+  printf '%s\n' "Mobile Crashlytics forwarding must preserve report type and allowlisted metadata." >&2
+  exit 1
+fi
+
 if ! grep -Fq "mApplication != null && ex != null" "$WEAR_UNCAUGHT_HANDLER"; then
   printf '%s\n' "Uncaught handler must guard missing application and throwable before starting the service." >&2
   exit 1
@@ -415,6 +438,17 @@ fi
 if ! grep -Fq 'ANDROID_HOME: ""' "$ROOT_DIR/.github/workflows/check.yml" ||
   ! grep -Fq 'ANDROID_SDK_ROOT: ""' "$ROOT_DIR/.github/workflows/check.yml"; then
   printf '%s\n' "GitHub Actions must clear hosted Android SDK variables for the legacy SDK-free baseline." >&2
+  exit 1
+fi
+
+if ! grep -Fq "runs-on: ubuntu-24.04" "$ROOT_DIR/.github/workflows/check.yml"; then
+  printf '%s\n' "GitHub Actions must use the stable Ubuntu 24.04 runner." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE" ||
+  [ "$(grep -c -- '--project-dir "$(ROOT)"' "$MAKEFILE")" -ne 4 ]; then
+  printf '%s\n' "Make targets must resolve Gradle and its project directory from the repository root." >&2
   exit 1
 fi
 
@@ -461,6 +495,12 @@ fi
 
 if ! grep -Fq "Mobile receivers log only the report type" "$README"; then
   printf '%s\n' "README must document mobile throwable log redaction." >&2
+  exit 1
+fi
+
+if ! grep -Fq "forward only the declared Wear device metadata keys" "$README" ||
+  ! grep -Fq "omit the hardware serial identifier" "$README"; then
+  printf '%s\n' "README must document the Crashlytics metadata privacy boundary." >&2
   exit 1
 fi
 
@@ -586,6 +626,12 @@ fi
 
 if ! grep -Fq "make check" "$CI_PLAN"; then
   printf '%s\n' "CI baseline plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$METADATA_PRIVACY_PLAN" ||
+  ! grep -Fq "make check" "$METADATA_PRIVACY_PLAN"; then
+  printf '%s\n' "Crash metadata privacy plan must be completed and record verification." >&2
   exit 1
 fi
 

@@ -2,6 +2,11 @@
 
 ## 2026-06-10
 
+- Restricted mobile Crashlytics metadata forwarding to a declared key
+  allowlist, removed metadata value logging, and stopped collecting the Wear
+  hardware serial identifier.
+- Rooted Make targets to the repository and pinned the hosted check runner to
+  Ubuntu 24.04.
 - Added a lightweight GitHub Actions workflow that runs `make check` for the
   Crashlytics mobile/wear baseline.
 - Pinned the checkout action, limited repository access to read-only, and

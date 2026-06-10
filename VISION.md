@@ -25,6 +25,8 @@ Priority:
 - Avoid local debug logging of reconstructed Wear stack traces on the phone
 - Reject incomplete decoded crash reports before writing mobile Crashlytics
   metadata
+- Allow only declared device metadata keys into mobile Crashlytics and omit
+  hardware serial identifiers from Wear reports
 - Guard connected Wear nodes before sending Data Layer messages
 - Keep internal Wear event broadcasts on typed Intent extras instead of Java
   object serialization

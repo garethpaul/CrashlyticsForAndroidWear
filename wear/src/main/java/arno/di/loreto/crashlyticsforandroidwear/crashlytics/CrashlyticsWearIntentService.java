@@ -62,7 +62,6 @@ public class CrashlyticsWearIntentService extends IntentService {
     public static final String DATA_MAP_ID = "ID";
     public static final String DATA_MAP_PRODUCT = "PRODUCT";
     public static final String DATA_MAP_RADIOVERSION = "RADIOVERSION";
-    public static final String DATA_MAP_SERIAL = "SERIAL";
     public static final String DATA_MAP_SUPPORTED_32_BIT_ABIS = "SUPPORTED_32_BIT_ABIS";
     public static final String DATA_MAP_SUPPORTED_64_BIT_ABIS = "SUPPORTED_64_BIT_ABIS";
     public static final String DATA_MAP_SUPPORTED_ABIS = "SUPPORTED_ABIS";
@@ -136,7 +135,6 @@ public class CrashlyticsWearIntentService extends IntentService {
             dataMap.putString(DATA_MAP_ID,Build.ID);
             dataMap.putString(DATA_MAP_PRODUCT,Build.PRODUCT);
             dataMap.putString(DATA_MAP_RADIOVERSION,Build.getRadioVersion());
-            dataMap.putString(DATA_MAP_SERIAL,Build.SERIAL);
 
             /* for API level 21 only
             StringBuffer thirtyTwoBitAbis = new StringBuffer();

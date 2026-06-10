@@ -7,8 +7,6 @@ import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.MessageEvent;
 
-import java.util.Iterator;
-
 import arno.di.loreto.crashlyticsforandroidwear.wearable.WearableListenerReceiver;
 
 /**
@@ -30,6 +28,13 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
     public static final String CRASH_DATA_WEAR = "WEAR_REPORT";
     private static final String REPORT_TYPE_CRASH = "CRASH";
     private static final String REPORT_TYPE_EXCEPTION = "EXCEPTION";
+    private static final String[] ALLOWED_METADATA_KEYS = {
+            "BOARD", "BOOTLOADER", "BRAND", "DEVICE", "HARDWARE",
+            "MANUFACTURER", "MODEL", "DISPLAY", "FINGERPRINT", "HOST", "ID",
+            "PRODUCT", "RADIOVERSION", "SUPPORTED_32_BIT_ABIS",
+            "SUPPORTED_64_BIT_ABIS", "SUPPORTED_ABIS", "TAGS", "TIME", "UNKNOWN",
+            "USER", "VERSION.CODENAME", "VERSION.INCREMENTAL", "VERSION.RELEASE"
+    };
 
     @Override
     public void onCreate(Context context) {
@@ -76,8 +81,8 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
         }
 
         Log.d(MYLOGGER, "Trying to send crashlytics report");
-        String reportType = dataMap.getString(DATA_MAP_REPORT_TYPE);
-        String errorReport = dataMap.getString(DATA_MAP_ERROR);
+        String reportType = getStringMetadata(dataMap, DATA_MAP_REPORT_TYPE);
+        String errorReport = getStringMetadata(dataMap, DATA_MAP_ERROR);
         if(reportType == null || reportType.length() == 0) {
             Log.e(MYLOGGER, "Crashlytics report missing DATA_MAP_REPORT_TYPE");
             return;
@@ -94,11 +99,11 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
         RuntimeException wearReport = new RuntimeException(errorReport);
         Log.d(MYLOGGER, "Crash report received from wear device: type=" + reportType);
         Crashlytics.setBool(CRASH_DATA_WEAR, Boolean.TRUE);
-        for(Iterator<String> i = dataMap.keySet().iterator(); i.hasNext();){
-            String key = i.next();
-            if(!key.equalsIgnoreCase(DATA_MAP_ERROR)){
-                Log.d(MYLOGGER,"data_map."+key+"="+dataMap.getString(key));
-                Crashlytics.setString(key, dataMap.getString(key));
+        Crashlytics.setString(DATA_MAP_REPORT_TYPE, reportType);
+        for (String key : ALLOWED_METADATA_KEYS) {
+            String value = getStringMetadata(dataMap, key);
+            if (value != null) {
+                Crashlytics.setString(key, value);
             }
         }
         //Is there a way to send a real crash report instead of log exception?
@@ -108,5 +113,15 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
 
     private static boolean isSupportedReportType(String reportType) {
         return REPORT_TYPE_CRASH.equals(reportType) || REPORT_TYPE_EXCEPTION.equals(reportType);
+    }
+
+    private static String getStringMetadata(DataMap dataMap, String key) {
+        try {
+            return dataMap.getString(key);
+        }
+        catch (ClassCastException e) {
+            Log.e(MYLOGGER, "Ignoring non-string crash metadata: " + key);
+            return null;
+        }
     }
 }
