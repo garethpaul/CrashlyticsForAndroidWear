@@ -15,6 +15,7 @@ import com.google.android.gms.wearable.Wearable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.concurrent.TimeUnit;
 
 /**
  * An IntentService to send Crashlytics reports to hosting device from wear device.
@@ -27,6 +28,7 @@ public class CrashlyticsWearIntentService extends IntentService {
      * The logger's name.
      */
     private static final String MYLOGGER = CrashlyticsWearIntentService.class.getName();
+    private static final long DATA_LAYER_TIMEOUT_SECONDS = 5;
     /**
      * The Intent's name.
      */
@@ -216,13 +218,15 @@ public class CrashlyticsWearIntentService extends IntentService {
                 .build();
         try {
             Log.d(MYLOGGER, "Connecting to Google API");
-            if (!mApiClient.blockingConnect().isSuccess()) {
+            if (!mApiClient.blockingConnect(
+                    DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS).isSuccess()) {
                 Log.e(MYLOGGER, "Connecting to Google API failed");
                 return;
             }
             Log.d(MYLOGGER, "Connected to Google API");
 
-            NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
+            NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(mApiClient)
+                    .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (nodes == null || nodes.getNodes() == null) {
                 Log.e(MYLOGGER, "No connected nodes available for crashlytics report");
                 return;
@@ -235,7 +239,8 @@ public class CrashlyticsWearIntentService extends IntentService {
                 }
 
                 MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
-                        mApiClient, node.getId(), path, dataMap.toByteArray() ).await();
+                        mApiClient, node.getId(), path, dataMap.toByteArray())
+                        .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                 if (result == null || result.getStatus() == null) {
                     Log.e(MYLOGGER, "Crashlytics send finished without status, Node:" + node.getDisplayName());
                     continue;

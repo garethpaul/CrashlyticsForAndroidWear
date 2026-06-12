@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-12
+
+- Added five-second deadlines to Wear GoogleApiClient connection, connected-node
+  discovery, and each crash or dummy message send.
+- Extended the SDK-free baseline and maintenance notes to reject unbounded Data
+  Layer waits in both sender services.
+
 ## 2026-06-10
 
 - Restricted mobile Crashlytics metadata forwarding to a declared key

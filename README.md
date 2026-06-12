@@ -125,6 +125,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   sending crash or dummy payloads through the Data Layer.
 - Wear message senders skip missing send results and statuses before reading
   Data Layer status details.
+- Wear message senders bound connection, node lookup, and per-node send waits
+  to five seconds so stalled paired-device operations cannot hold a service indefinitely.
 - Mobile and wear app-data backup is disabled by default for the crash
   forwarding sample.
 - Mobile and wear lint keep only the old missing API database runner error and
