@@ -21,6 +21,7 @@ MOBILE_REPORT_TYPE_ALLOWLIST_PLAN="$ROOT_DIR/docs/plans/2026-06-09-mobile-report
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 METADATA_PRIVACY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-crash-metadata-privacy-boundary.md"
 COMPONENT_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-android-component-export-contract.md"
+WEAR_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-data-layer-send-timeouts.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 WEAR_MANIFEST="$ROOT_DIR/wear/src/main/AndroidManifest.xml"
@@ -62,6 +63,7 @@ for path in \
   "docs/plans/2026-06-10-ci-baseline.md" \
   "docs/plans/2026-06-10-crash-metadata-privacy-boundary.md" \
   "docs/plans/2026-06-12-android-component-export-contract.md" \
+  "docs/plans/2026-06-12-wear-data-layer-send-timeouts.md" \
   "gradlew" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "settings.gradle" \
@@ -413,6 +415,26 @@ if ! grep -Fq "mApiClient.disconnect()" "$WEAR_SERVICE"; then
   exit 1
 fi
 
+for sender in "$WEAR_SERVICE" "$DUMMY_SERVICE"; do
+  if ! grep -Fq "private static final long DATA_LAYER_TIMEOUT_SECONDS = 5;" "$sender" || \
+     ! grep -Fq "import java.util.concurrent.TimeUnit;" "$sender" || \
+     ! grep -Fq "DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS" "$sender"; then
+    printf '%s\n' "Wear message senders must declare and use the five-second Data Layer timeout." >&2
+    exit 1
+  fi
+
+  if grep -Fq "blockingConnect().isSuccess()" "$sender" || grep -Fq ").await();" "$sender"; then
+    printf '%s\n' "Wear message senders must not use unbounded Data Layer waits." >&2
+    exit 1
+  fi
+
+  timeout_use_count=$(grep -Fc "DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS" "$sender")
+  if [ "$timeout_use_count" -ne 3 ]; then
+    printf '%s\n' "Each Wear sender must bound connection, node lookup, and message send waits." >&2
+    exit 1
+  fi
+done
+
 if ! grep -Fq "path == null || path.length() == 0 || dataMap == null" "$WEAR_SERVICE" ||
   ! grep -Fq "No connected nodes available for crashlytics report" "$WEAR_SERVICE" ||
   ! grep -Fq "Skipping connected node without id" "$WEAR_SERVICE"; then
@@ -451,7 +473,7 @@ if ! grep -Fq "Ignoring dummy message without path" "$ROOT_DIR/mobile/src/main/j
   exit 1
 fi
 
-if ! grep -Fq "blockingConnect().isSuccess()" "$DUMMY_SERVICE" || ! grep -Fq "mApiClient.disconnect()" "$DUMMY_SERVICE"; then
+if ! grep -Fq "blockingConnect(" "$DUMMY_SERVICE" || ! grep -Fq "mApiClient.disconnect()" "$DUMMY_SERVICE"; then
   printf '%s\n' "Dummy message sender must check GoogleApiClient connection success and disconnect." >&2
   exit 1
 fi
@@ -666,6 +688,11 @@ if ! grep -Fq "Wear message senders skip missing send results and statuses" "$RE
   exit 1
 fi
 
+if ! grep -Fq "Wear message senders bound connection, node lookup, and per-node send waits" "$README"; then
+  printf '%s\n' "README must document bounded Wear Data Layer waits." >&2
+  exit 1
+fi
+
 if ! grep -Fq "Mobile and wear app-data backup is disabled" "$README"; then
   printf '%s\n' "README must document the Android backup opt-out." >&2
   exit 1
@@ -779,6 +806,12 @@ fi
 if ! grep -Fq "status: completed" "$METADATA_PRIVACY_PLAN" ||
   ! grep -Fq "make check" "$METADATA_PRIVACY_PLAN"; then
   printf '%s\n' "Crash metadata privacy plan must be completed and record verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$WEAR_TIMEOUT_PLAN" || \
+   ! grep -Fq "make check" "$WEAR_TIMEOUT_PLAN"; then
+  printf '%s\n' "Wear Data Layer timeout plan must record completed status and make check verification." >&2
   exit 1
 fi
 

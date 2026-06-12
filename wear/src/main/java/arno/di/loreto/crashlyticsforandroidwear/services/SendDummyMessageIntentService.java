@@ -10,6 +10,8 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * A dummy message sender to illustrate the need of handling different type of message
  * between the watch and the host device.
@@ -17,6 +19,7 @@ import com.google.android.gms.wearable.Wearable;
 public class SendDummyMessageIntentService extends IntentService {
 
     private static final String MYLOGGER = SendDummyMessageIntentService.class.getName();
+    private static final long DATA_LAYER_TIMEOUT_SECONDS = 5;
     /**
      * The Intent's name.
      */
@@ -68,13 +71,15 @@ public class SendDummyMessageIntentService extends IntentService {
                 .build();
         try {
             Log.d(MYLOGGER, "Connecting to Google API");
-            if (!mApiClient.blockingConnect().isSuccess()) {
+            if (!mApiClient.blockingConnect(
+                    DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS).isSuccess()) {
                 Log.e(MYLOGGER, "Connecting to Google API failed");
                 return;
             }
             Log.d(MYLOGGER, "Connected to Google API");
 
-            NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
+            NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(mApiClient)
+                    .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (nodes == null || nodes.getNodes() == null) {
                 Log.e(MYLOGGER, "No connected nodes available for dummy message");
                 return;
@@ -87,7 +92,8 @@ public class SendDummyMessageIntentService extends IntentService {
                 }
 
                 MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
-                        mApiClient, node.getId(), path, message.getBytes() ).await();
+                        mApiClient, node.getId(), path, message.getBytes())
+                        .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                 if (result == null || result.getStatus() == null) {
                     Log.e(MYLOGGER, "Dummy message send finished without status, Node:" + node.getDisplayName());
                     continue;

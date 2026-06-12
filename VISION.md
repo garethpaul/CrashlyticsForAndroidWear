@@ -31,6 +31,7 @@ Priority:
 - Keep internal Wear event broadcasts on typed Intent extras instead of Java
   object serialization
 - Guard Wear Data Layer send results before reading status details
+- Bound Wear Data Layer connection, discovery, and send waits
 - Keep mobile and wear app-data backup disabled by default
 - Avoid committing Fabric or Crashlytics credentials
 - Keep the SDK-free `make check` baseline running in GitHub Actions

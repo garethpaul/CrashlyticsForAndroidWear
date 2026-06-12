@@ -5,6 +5,10 @@
 - Made every Android component export policy explicit across the mobile and
   Wear manifests, constrained the Play Services listener action, and retained
   only the service-local legacy exported-service lint annotation.
+- Added five-second deadlines to Wear GoogleApiClient connection, connected-node
+  discovery, and each crash or dummy message send.
+- Extended the SDK-free baseline and maintenance notes to reject unbounded Data
+  Layer waits in both sender services.
 
 ## 2026-06-10
 
