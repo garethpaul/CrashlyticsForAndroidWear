@@ -234,13 +234,17 @@ for service_name in \
   fi
 done
 
-if ! grep -Fq "Status: Implementation Complete; Hosted Verification Pending" "$COMPONENT_EXPORT_PLAN" ||
+if ! grep -Fq "Status: Completed" "$COMPONENT_EXPORT_PLAN" ||
   ! grep -Fq "CodeQL alert 1" "$COMPONENT_EXPORT_PLAN" ||
   ! grep -Fq "fresh clone" "$COMPONENT_EXPORT_PLAN" ||
   ! grep -Fq "Twenty-nine focused mutations" "$COMPONENT_EXPORT_PLAN" ||
-  ! grep -Fq "Exact-head pull-request baseline and CodeQL verification remain pending" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "42f2da730712fea266ad41ee0b8ff26df06d32e9" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "push run \`27404727879\`" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "pull-request run \`27404729914\`" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "CodeQL run \`27404728054\`" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "zero open code-scanning alerts" "$COMPONENT_EXPORT_PLAN" ||
   ! grep -Fq "do not broaden it into lint.xml" "$COMPONENT_EXPORT_PLAN"; then
-  printf '%s\n' "Android component export plan must record completed local evidence and pending hosted verification." >&2
+  printf '%s\n' "Android component export plan must record completed local and hosted verification." >&2
   exit 1
 fi
 

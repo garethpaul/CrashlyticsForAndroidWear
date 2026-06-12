@@ -1,6 +1,6 @@
 # Android Component Export Contract
 
-Status: Implementation Complete; Hosted Verification Pending
+Status: Completed
 
 ## Context
 
@@ -51,8 +51,12 @@ forwarding, or dummy-message delivery.
 - Twenty-nine focused mutations are rejected across component inventory,
   export policy, launcher filters, listener binding, isolated service process,
   lint annotation, documentation, and plan contracts.
-- Exact-head pull-request baseline and CodeQL verification remain pending
-  until the reviewed commit is pushed.
+- On reviewed implementation head
+  `42f2da730712fea266ad41ee0b8ff26df06d32e9`, push run `27404727879`
+  and pull-request run `27404729914` completed successfully.
+- CodeQL run `27404728054` completed successfully for Actions and Java/Kotlin,
+  and `refs/pull/1/head` reported zero open code-scanning alerts. Alert 1
+  remains open only on `master` until this pull request is merged.
 
 ## Boundaries
 
