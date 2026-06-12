@@ -2,6 +2,8 @@
 
 ## 2026-06-12
 
+- Added an authenticated Gradle wrapper with generated bootstrap artifacts,
+  exact artifact contracts, and the official Gradle 1.12 distribution checksum.
 - Made every Android component export policy explicit across the mobile and
   Wear manifests, constrained the Play Services listener action, and retained
   only the service-local legacy exported-service lint annotation.

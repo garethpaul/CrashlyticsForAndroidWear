@@ -35,6 +35,7 @@ Priority:
 - Keep mobile and wear app-data backup disabled by default
 - Avoid committing Fabric or Crashlytics credentials
 - Keep the SDK-free `make check` baseline running in GitHub Actions
+- Retain a checksum-verified direct wrapper for the legacy Gradle 1.12 build
 - Maintain the mobile/wear module relationship
 
 Next priorities:

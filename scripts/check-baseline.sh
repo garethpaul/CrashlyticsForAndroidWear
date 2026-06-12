@@ -6,6 +6,10 @@ ROOT_BUILD="$ROOT_DIR/build.gradle"
 MOBILE_BUILD="$ROOT_DIR/mobile/build.gradle"
 WEAR_BUILD="$ROOT_DIR/wear/build.gradle"
 WRAPPER="$ROOT_DIR/gradle/wrapper/gradle-wrapper.properties"
+GRADLEW="$ROOT_DIR/gradlew"
+GRADLEW_BAT="$ROOT_DIR/gradlew.bat"
+WRAPPER_JAR="$ROOT_DIR/gradle/wrapper/gradle-wrapper.jar"
+WRAPPER_PLAN="$ROOT_DIR/docs/plans/2026-06-12-gradle-wrapper-verification.md"
 README="$ROOT_DIR/README.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-crashlytics-wear-build-baseline.md"
 LINT_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gradle-lint-baseline.md"
@@ -36,6 +40,29 @@ WEAR_SERVICE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidw
 DUMMY_SERVICE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/services/SendDummyMessageIntentService.java"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 
+require_sha256() {
+  file=$1
+  expected=$2
+  message=$3
+  if [ "$(sha256sum "$file" | awk '{print $1}')" != "$expected" ]; then
+    printf '%s\n' "$message" >&2
+    exit 1
+  fi
+}
+
+expected_wrapper_properties() {
+  cat <<'EOF'
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionSha256Sum=cf111fcb34804940404e79eaf307876acb8434005bc4cc782d260730a0a2a4f2
+distributionUrl=https\://services.gradle.org/distributions/gradle-1.12-all.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
+}
+
 require_file() {
   path=$1
   if [ ! -f "$ROOT_DIR/$path" ]; then
@@ -64,8 +91,11 @@ for path in \
   "docs/plans/2026-06-10-crash-metadata-privacy-boundary.md" \
   "docs/plans/2026-06-12-android-component-export-contract.md" \
   "docs/plans/2026-06-12-wear-data-layer-send-timeouts.md" \
+  "docs/plans/2026-06-12-gradle-wrapper-verification.md" \
   "gradlew" \
+  "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
+  "gradle/wrapper/gradle-wrapper.jar" \
   "settings.gradle" \
   "build.gradle" \
   "mobile/build.gradle" \
@@ -91,8 +121,31 @@ for tracked in ".idea" "CrashlyticsForAndroidWear.iml" "mobile/mobile.iml" "wear
   fi
 done
 
-if ! grep -Fq "https\\://services.gradle.org/distributions/gradle-1.12-all.zip" "$WRAPPER"; then
-  printf '%s\n' "Gradle wrapper must use HTTPS for the legacy 1.12 distribution." >&2
+if [ ! -x "$GRADLEW" ] || [ "$(cat "$WRAPPER")" != "$(expected_wrapper_properties)" ]; then
+  printf '%s\n' "Generated wrapper must retain the reviewed Gradle 1.12 URL and checksum." >&2
+  exit 1
+fi
+
+require_sha256 "$GRADLEW" "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409" "Unix wrapper must match the reviewed generated script."
+require_sha256 "$GRADLEW_BAT" "94102713eb8fb22d032397924c0f38ab2da783ba60d07054339f1190a0c4e2cd" "Windows wrapper must match the reviewed generated script."
+require_sha256 "$WRAPPER_JAR" "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172" "Wrapper JAR must match Gradle's published 8.14.5 checksum."
+require_sha256 "$WRAPPER" "2353d4dfa6f8f1720767ef2804b76e4be600027875f9feafa331af487bc2bd84" "Wrapper properties must match the reviewed checksum contract."
+
+if ! grep -Fq "status: completed" "$WRAPPER_PLAN" || \
+   ! grep -Fq "fresh temporary Gradle user home" "$WRAPPER_PLAN" || \
+   ! grep -Fq "incorrect checksum was rejected" "$WRAPPER_PLAN" || \
+   ! grep -Fq 'SDK-backed `make check` passed' "$WRAPPER_PLAN" || \
+   ! grep -Fq "external working directory" "$WRAPPER_PLAN" || \
+   ! grep -Fq "hostile mutations rejected" "$WRAPPER_PLAN"; then
+  printf '%s\n' "Gradle wrapper plan must record completed local verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "distributionSha256Sum" "$README" || \
+   ! grep -Fq "generated Gradle 8.14.5 bootstrap" "$ROOT_DIR/SECURITY.md" || \
+   ! grep -Fq "checksum-verified direct wrapper" "$ROOT_DIR/VISION.md" || \
+   ! grep -Fq "authenticated Gradle wrapper" "$ROOT_DIR/CHANGES.md"; then
+  printf '%s\n' "Repository guidance must document the authenticated wrapper boundary." >&2
   exit 1
 fi
 

@@ -44,6 +44,9 @@ Helpful reports include:
   checkout action, read-only repository access, and hosted Android SDK
   variables cleared; review workflow, Gradle, and checker changes as part of
   the supply-chain surface.
+- The direct wrapper uses a generated Gradle 8.14.5 bootstrap and pins the
+  official Gradle 1.12 distribution checksum; review all wrapper artifacts and
+  checksum changes as one supply-chain boundary.
 
 ## Mobile Privacy Notes
 
