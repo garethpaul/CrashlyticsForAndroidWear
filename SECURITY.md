@@ -24,6 +24,11 @@ Helpful reports include:
 
 ## Project Security Posture
 
+- Both launcher activities are explicitly exported for user entry, and the
+  mobile Wear listener is explicitly exported only for the legacy Google Play
+  services `BIND_LISTENER` action. Internal crash receivers and Wear intent
+  services are explicitly non-exported.
+
 - This repository appears to be an Android mobile application or sample. The active security scope is the code and documentation on the default branch.
 - Review found external API integrations or credential-adjacent configuration; changes in those areas should receive security-focused review before merge.
 - Review found network clients, sockets, web APIs, or service endpoints; changes in those areas should receive security-focused review before merge.

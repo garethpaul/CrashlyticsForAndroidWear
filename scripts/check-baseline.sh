@@ -20,6 +20,7 @@ ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 MOBILE_REPORT_TYPE_ALLOWLIST_PLAN="$ROOT_DIR/docs/plans/2026-06-09-mobile-report-type-allowlist.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 METADATA_PRIVACY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-crash-metadata-privacy-boundary.md"
+COMPONENT_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-android-component-export-contract.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 WEAR_MANIFEST="$ROOT_DIR/wear/src/main/AndroidManifest.xml"
@@ -60,6 +61,7 @@ for path in \
   "docs/plans/2026-06-09-wear-throwable-log-redaction.md" \
   "docs/plans/2026-06-10-ci-baseline.md" \
   "docs/plans/2026-06-10-crash-metadata-privacy-boundary.md" \
+  "docs/plans/2026-06-12-android-component-export-contract.md" \
   "gradlew" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "settings.gradle" \
@@ -153,11 +155,6 @@ if ! grep -Fq "ext.enableCrashlytics = false" "$MOBILE_BUILD"; then
   exit 1
 fi
 
-if ! grep -Fq 'android:exported="false"' "$MOBILE_MANIFEST"; then
-  printf '%s\n' "Crashlytics broadcast receivers must be non-exported." >&2
-  exit 1
-fi
-
 for manifest in "$MOBILE_MANIFEST" "$WEAR_MANIFEST"; do
   if grep -Fq 'android:allowBackup="true"' "$manifest" ||
     ! grep -Fq 'android:allowBackup="false"' "$manifest"; then
@@ -166,8 +163,89 @@ for manifest in "$MOBILE_MANIFEST" "$WEAR_MANIFEST"; do
   fi
 done
 
-if ! grep -Fq 'tools:ignore="ExportedService"' "$MOBILE_MANIFEST"; then
-  printf '%s\n' "WearableListenerService exported-service lint warning must be explicitly documented." >&2
+if [ "$(grep -c '<activity' "$MOBILE_MANIFEST")" -ne 1 ] ||
+  [ "$(grep -c '<service' "$MOBILE_MANIFEST")" -ne 1 ] ||
+  [ "$(grep -c '<receiver' "$MOBILE_MANIFEST")" -ne 2 ] ||
+  [ "$(grep -c '<activity' "$WEAR_MANIFEST")" -ne 1 ] ||
+  [ "$(grep -c '<service' "$WEAR_MANIFEST")" -ne 2 ] ||
+  [ "$(grep -c '<receiver' "$WEAR_MANIFEST")" -ne 0 ]; then
+  printf '%s\n' "Android component inventory must stay within the reviewed manifest boundary." >&2
+  exit 1
+fi
+if [ "$(grep -c 'android:exported=' "$MOBILE_MANIFEST")" -ne 4 ] ||
+  [ "$(grep -c 'android:exported=' "$WEAR_MANIFEST")" -ne 3 ]; then
+  printf '%s\n' "Every reviewed Android component must declare an explicit export policy." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc 'tools:ignore="ExportedService"' "$MOBILE_MANIFEST")" -ne 1 ] ||
+  [ "$(grep -Fc 'xmlns:tools="http://schemas.android.com/tools"' "$MOBILE_MANIFEST")" -ne 1 ]; then
+  printf '%s\n' "The required exported listener warning must stay locally documented once." >&2
+  exit 1
+fi
+
+mobile_launcher_manifest=$(awk '/android:name="arno.di.loreto.crashlyticsforandroidwear.activities.MainActivity"/ { capture = 1 } capture { print } capture && /<\/activity>/ { exit }' "$MOBILE_MANIFEST")
+wear_launcher_manifest=$(awk '/android:name="arno.di.loreto.crashlyticsforandroidwear.activities.MainWearActivity"/ { capture = 1 } capture { print } capture && /<\/activity>/ { exit }' "$WEAR_MANIFEST")
+for launcher_manifest in "$mobile_launcher_manifest" "$wear_launcher_manifest"; do
+  if [ "$(printf '%s\n' "$launcher_manifest" | grep -Fc 'android:exported="true"')" -ne 1 ] ||
+    [ "$(printf '%s\n' "$launcher_manifest" | grep -c '<intent-filter>' || true)" -ne 1 ] ||
+    [ "$(printf '%s\n' "$launcher_manifest" | grep -c '<action ' || true)" -ne 1 ] ||
+    [ "$(printf '%s\n' "$launcher_manifest" | grep -c '<category ' || true)" -ne 1 ] ||
+    ! printf '%s\n' "$launcher_manifest" | grep -Fq '<action android:name="android.intent.action.MAIN" />' ||
+    ! printf '%s\n' "$launcher_manifest" | grep -Fq '<category android:name="android.intent.category.LAUNCHER" />'; then
+    printf '%s\n' "Both Android launcher activities must be explicitly exported with exactly MAIN/LAUNCHER." >&2
+    exit 1
+  fi
+done
+
+if [ "$(grep -Fc 'android:name="arno.di.loreto.crashlyticsforandroidwear.wearable.WearableListenerBroadcaster"' "$MOBILE_MANIFEST")" -ne 1 ]; then
+  printf '%s\n' "Mobile manifest must declare exactly one Wear listener service." >&2
+  exit 1
+fi
+wear_listener_manifest=$(awk '/android:name="arno.di.loreto.crashlyticsforandroidwear.wearable.WearableListenerBroadcaster"/ { capture = 1 } capture { print } capture && /<\/service>/ { exit }' "$MOBILE_MANIFEST")
+if [ "$(printf '%s\n' "$wear_listener_manifest" | grep -Fc 'android:exported="true"')" -ne 1 ] ||
+  [ "$(printf '%s\n' "$wear_listener_manifest" | grep -Fc 'tools:ignore="ExportedService"')" -ne 1 ] ||
+  [ "$(printf '%s\n' "$wear_listener_manifest" | grep -c '<action ' || true)" -ne 1 ] ||
+  ! printf '%s\n' "$wear_listener_manifest" | grep -Fq '<action android:name="com.google.android.gms.wearable.BIND_LISTENER" />'; then
+  printf '%s\n' "Mobile Wear listener must be explicitly exported for exactly BIND_LISTENER." >&2
+  exit 1
+fi
+
+for receiver_name in \
+  "arno.di.loreto.crashlyticsforandroidwear.crashlytics.CrashlyticsWearableListenerReceiver" \
+  "arno.di.loreto.crashlyticsforandroidwear.dummy.DummyWearableListenerReceiver"; do
+  receiver_manifest=$(awk -v name="$receiver_name" 'index($0, "android:name=\"" name "\"") { capture = 1 } capture { print } capture && /<\/receiver>/ { exit }' "$MOBILE_MANIFEST")
+  if [ "$(printf '%s\n' "$receiver_manifest" | grep -Fc 'android:exported="false"')" -ne 1 ]; then
+    printf '%s\n' "Mobile Crashlytics receivers must be explicitly non-exported: $receiver_name" >&2
+    exit 1
+  fi
+done
+
+for service_name in \
+  "arno.di.loreto.crashlyticsforandroidwear.crashlytics.CrashlyticsWearIntentService" \
+  "arno.di.loreto.crashlyticsforandroidwear.services.SendDummyMessageIntentService"; do
+  service_manifest=$(awk -v name="$service_name" 'index($0, "android:name=\"" name "\"") { capture = 1 } capture { print } capture && /\/>/ { exit }' "$WEAR_MANIFEST")
+  if [ "$(printf '%s\n' "$service_manifest" | grep -Fc 'android:exported="false"')" -ne 1 ] ||
+    [ "$(printf '%s\n' "$service_manifest" | grep -Fc 'android:process=":error"')" -ne 1 ]; then
+    printf '%s\n' "Internal Wear intent services must be non-exported and keep their isolated process: $service_name" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "Status: Implementation Complete; Hosted Verification Pending" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "CodeQL alert 1" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "fresh clone" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "Twenty-nine focused mutations" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "Exact-head pull-request baseline and CodeQL verification remain pending" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "do not broaden it into lint.xml" "$COMPONENT_EXPORT_PLAN"; then
+  printf '%s\n' "Android component export plan must record completed local evidence and pending hosted verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Both launcher activities and the Google Play services Wear listener" "$README" ||
+  ! grep -Fq "Both launcher activities are explicitly exported" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "every Android component export policy explicit" "$ROOT_DIR/CHANGES.md"; then
+  printf '%s\n' "Documentation must record the explicit Android component trust boundaries." >&2
   exit 1
 fi
 

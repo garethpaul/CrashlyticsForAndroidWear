@@ -1,6 +1,6 @@
 # Android Component Export Contract
 
-Status: Planned
+Status: Implementation Complete; Hosted Verification Pending
 
 ## Context
 
@@ -27,8 +27,9 @@ forwarding, or dummy-message delivery.
   the single required `BIND_LISTENER` action.
 - Keep both mobile broadcast receivers and both internal Wear intent services
   explicitly non-exported.
-- Remove the obsolete `tools:ignore="ExportedService"` suppression and unused
-  tools namespace.
+- Retain the service-local `tools:ignore="ExportedService"` annotation because
+  AGP 1.1 warns about the required permissionless Play Services binding even
+  after the export policy is explicit; do not broaden it into lint.xml.
 - Extend manifest contracts and security documentation for every component.
 
 ## Verification
@@ -36,9 +37,22 @@ forwarding, or dummy-message delivery.
 - Parse both manifests as XML.
 - Run SDK-free and SDK-backed `make check`.
 - Run the complete gate through an absolute Makefile path and fresh clone.
-- Reject focused component export, listener action, lint-suppression,
+- Reject focused component export, listener action, lint-annotation,
   documentation, and plan mutations.
 - Pass exact-head pull-request baseline and CodeQL verification.
+
+### Completed local evidence
+
+- Both manifests parse as XML.
+- SDK-free and SDK-backed `make check` pass; legacy lint reports zero issues
+  for mobile and Wear, and both debug applications assemble successfully.
+- The complete SDK-backed gate passes from a fresh external clone with the
+  reviewed patch applied.
+- Twenty-nine focused mutations are rejected across component inventory,
+  export policy, launcher filters, listener binding, isolated service process,
+  lint annotation, documentation, and plan contracts.
+- Exact-head pull-request baseline and CodeQL verification remain pending
+  until the reviewed commit is pushed.
 
 ## Boundaries
 

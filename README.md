@@ -84,6 +84,11 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 ## Security and Privacy Notes
 
+- Both launcher activities and the Google Play services Wear listener declare
+  their required exported policy explicitly. The listener accepts only the
+  legacy `BIND_LISTENER` action, while crash receivers and internal Wear
+  services remain non-exported.
+
 - Review changes touching external API calls or credential-adjacent configuration; examples from the scan include mobile/src/main/AndroidManifest.xml.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include gradle.properties, mobile/build.gradle, mobile/src/androidTest/java/loreto/di/arno/crashlyticsforandroidwear/ApplicationTest.java, mobile/src/main/AndroidManifest.xml, and 3 more.
 - Review changes touching mobile permissions or privacy-sensitive device data; examples from the scan include gradlew, mobile/src/main/AndroidManifest.xml.

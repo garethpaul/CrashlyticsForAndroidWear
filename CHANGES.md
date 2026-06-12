@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-12
+
+- Made every Android component export policy explicit across the mobile and
+  Wear manifests, constrained the Play Services listener action, and retained
+  only the service-local legacy exported-service lint annotation.
+
 ## 2026-06-10
 
 - Restricted mobile Crashlytics metadata forwarding to a declared key
