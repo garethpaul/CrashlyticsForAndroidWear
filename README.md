@@ -60,8 +60,8 @@ scripts/check-baseline.sh
 
 GitHub Actions runs `make check` on pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only
-repository access, an Ubuntu 24.04 runner, and a bounded runtime. It explicitly clears hosted Android
-SDK variables so Gradle 1.12 and the discontinued Fabric/JCenter stack are not
+repository access, an Ubuntu 24.04 runner, and a bounded runtime. It does not persist checkout credentials and explicitly clears hosted Android SDK
+variables so Gradle 1.12 and the discontinued Fabric/JCenter stack are not
 invoked by an incompatible modern runner image.
 
 When the legacy Android toolchain can resolve all discontinued artifacts, use:
@@ -73,6 +73,11 @@ ANDROID_HOME=/path/to/android-sdk ./gradlew tasks --no-daemon
 ANDROID_HOME=/path/to/android-sdk ./gradlew assembleDebug --no-daemon
 ```
 
+The direct wrapper uses Gradle's generated Gradle 8.14.5 bootstrap artifacts
+while retaining Gradle 1.12 for project compatibility. The committed
+`distributionSha256Sum` authenticates the official Gradle 1.12 archive before
+it is installed.
+
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets
@@ -83,6 +88,11 @@ When the required SDK or runtime is unavailable, use static checks and source re
   against a real Crashlytics/Fabric project.
 
 ## Security and Privacy Notes
+
+- Both launcher activities and the Google Play services Wear listener declare
+  their required exported policy explicitly. The listener accepts only the
+  legacy `BIND_LISTENER` action, while crash receivers and internal Wear
+  services remain non-exported.
 
 - Review changes touching external API calls or credential-adjacent configuration; examples from the scan include mobile/src/main/AndroidManifest.xml.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include gradle.properties, mobile/build.gradle, mobile/src/androidTest/java/loreto/di/arno/crashlyticsforandroidwear/ApplicationTest.java, mobile/src/main/AndroidManifest.xml, and 3 more.

@@ -6,6 +6,10 @@ ROOT_BUILD="$ROOT_DIR/build.gradle"
 MOBILE_BUILD="$ROOT_DIR/mobile/build.gradle"
 WEAR_BUILD="$ROOT_DIR/wear/build.gradle"
 WRAPPER="$ROOT_DIR/gradle/wrapper/gradle-wrapper.properties"
+GRADLEW="$ROOT_DIR/gradlew"
+GRADLEW_BAT="$ROOT_DIR/gradlew.bat"
+WRAPPER_JAR="$ROOT_DIR/gradle/wrapper/gradle-wrapper.jar"
+WRAPPER_PLAN="$ROOT_DIR/docs/plans/2026-06-12-gradle-wrapper-verification.md"
 README="$ROOT_DIR/README.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-crashlytics-wear-build-baseline.md"
 LINT_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gradle-lint-baseline.md"
@@ -20,6 +24,7 @@ ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 MOBILE_REPORT_TYPE_ALLOWLIST_PLAN="$ROOT_DIR/docs/plans/2026-06-09-mobile-report-type-allowlist.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 METADATA_PRIVACY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-crash-metadata-privacy-boundary.md"
+COMPONENT_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-android-component-export-contract.md"
 WEAR_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-data-layer-send-timeouts.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
@@ -33,6 +38,30 @@ WEAR_API="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/
 WEAR_UNCAUGHT_HANDLER="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrachlyticsWearUncaughtExceptionHandler.java"
 WEAR_SERVICE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrashlyticsWearIntentService.java"
 DUMMY_SERVICE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/services/SendDummyMessageIntentService.java"
+CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
+
+require_sha256() {
+  file=$1
+  expected=$2
+  message=$3
+  if [ "$(sha256sum "$file" | awk '{print $1}')" != "$expected" ]; then
+    printf '%s\n' "$message" >&2
+    exit 1
+  fi
+}
+
+expected_wrapper_properties() {
+  cat <<'EOF'
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionSha256Sum=cf111fcb34804940404e79eaf307876acb8434005bc4cc782d260730a0a2a4f2
+distributionUrl=https\://services.gradle.org/distributions/gradle-1.12-all.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
+}
 
 require_file() {
   path=$1
@@ -60,9 +89,13 @@ for path in \
   "docs/plans/2026-06-09-wear-throwable-log-redaction.md" \
   "docs/plans/2026-06-10-ci-baseline.md" \
   "docs/plans/2026-06-10-crash-metadata-privacy-boundary.md" \
+  "docs/plans/2026-06-12-android-component-export-contract.md" \
   "docs/plans/2026-06-12-wear-data-layer-send-timeouts.md" \
+  "docs/plans/2026-06-12-gradle-wrapper-verification.md" \
   "gradlew" \
+  "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
+  "gradle/wrapper/gradle-wrapper.jar" \
   "settings.gradle" \
   "build.gradle" \
   "mobile/build.gradle" \
@@ -88,8 +121,31 @@ for tracked in ".idea" "CrashlyticsForAndroidWear.iml" "mobile/mobile.iml" "wear
   fi
 done
 
-if ! grep -Fq "https\\://services.gradle.org/distributions/gradle-1.12-all.zip" "$WRAPPER"; then
-  printf '%s\n' "Gradle wrapper must use HTTPS for the legacy 1.12 distribution." >&2
+if [ ! -x "$GRADLEW" ] || [ "$(cat "$WRAPPER")" != "$(expected_wrapper_properties)" ]; then
+  printf '%s\n' "Generated wrapper must retain the reviewed Gradle 1.12 URL and checksum." >&2
+  exit 1
+fi
+
+require_sha256 "$GRADLEW" "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409" "Unix wrapper must match the reviewed generated script."
+require_sha256 "$GRADLEW_BAT" "94102713eb8fb22d032397924c0f38ab2da783ba60d07054339f1190a0c4e2cd" "Windows wrapper must match the reviewed generated script."
+require_sha256 "$WRAPPER_JAR" "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172" "Wrapper JAR must match Gradle's published 8.14.5 checksum."
+require_sha256 "$WRAPPER" "2353d4dfa6f8f1720767ef2804b76e4be600027875f9feafa331af487bc2bd84" "Wrapper properties must match the reviewed checksum contract."
+
+if ! grep -Fq "status: completed" "$WRAPPER_PLAN" || \
+   ! grep -Fq "fresh temporary Gradle user home" "$WRAPPER_PLAN" || \
+   ! grep -Fq "incorrect checksum was rejected" "$WRAPPER_PLAN" || \
+   ! grep -Fq 'SDK-backed `make check` passed' "$WRAPPER_PLAN" || \
+   ! grep -Fq "external working directory" "$WRAPPER_PLAN" || \
+   ! grep -Fq "hostile mutations rejected" "$WRAPPER_PLAN"; then
+  printf '%s\n' "Gradle wrapper plan must record completed local verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "distributionSha256Sum" "$README" || \
+   ! grep -Fq "generated Gradle 8.14.5 bootstrap" "$ROOT_DIR/SECURITY.md" || \
+   ! grep -Fq "checksum-verified direct wrapper" "$ROOT_DIR/VISION.md" || \
+   ! grep -Fq "authenticated Gradle wrapper" "$ROOT_DIR/CHANGES.md"; then
+  printf '%s\n' "Repository guidance must document the authenticated wrapper boundary." >&2
   exit 1
 fi
 
@@ -154,11 +210,6 @@ if ! grep -Fq "ext.enableCrashlytics = false" "$MOBILE_BUILD"; then
   exit 1
 fi
 
-if ! grep -Fq 'android:exported="false"' "$MOBILE_MANIFEST"; then
-  printf '%s\n' "Crashlytics broadcast receivers must be non-exported." >&2
-  exit 1
-fi
-
 for manifest in "$MOBILE_MANIFEST" "$WEAR_MANIFEST"; do
   if grep -Fq 'android:allowBackup="true"' "$manifest" ||
     ! grep -Fq 'android:allowBackup="false"' "$manifest"; then
@@ -167,8 +218,93 @@ for manifest in "$MOBILE_MANIFEST" "$WEAR_MANIFEST"; do
   fi
 done
 
-if ! grep -Fq 'tools:ignore="ExportedService"' "$MOBILE_MANIFEST"; then
-  printf '%s\n' "WearableListenerService exported-service lint warning must be explicitly documented." >&2
+if [ "$(grep -c '<activity' "$MOBILE_MANIFEST")" -ne 1 ] ||
+  [ "$(grep -c '<service' "$MOBILE_MANIFEST")" -ne 1 ] ||
+  [ "$(grep -c '<receiver' "$MOBILE_MANIFEST")" -ne 2 ] ||
+  [ "$(grep -c '<activity' "$WEAR_MANIFEST")" -ne 1 ] ||
+  [ "$(grep -c '<service' "$WEAR_MANIFEST")" -ne 2 ] ||
+  [ "$(grep -c '<receiver' "$WEAR_MANIFEST")" -ne 0 ]; then
+  printf '%s\n' "Android component inventory must stay within the reviewed manifest boundary." >&2
+  exit 1
+fi
+if [ "$(grep -c 'android:exported=' "$MOBILE_MANIFEST")" -ne 4 ] ||
+  [ "$(grep -c 'android:exported=' "$WEAR_MANIFEST")" -ne 3 ]; then
+  printf '%s\n' "Every reviewed Android component must declare an explicit export policy." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc 'tools:ignore="ExportedService"' "$MOBILE_MANIFEST")" -ne 1 ] ||
+  [ "$(grep -Fc 'xmlns:tools="http://schemas.android.com/tools"' "$MOBILE_MANIFEST")" -ne 1 ]; then
+  printf '%s\n' "The required exported listener warning must stay locally documented once." >&2
+  exit 1
+fi
+
+mobile_launcher_manifest=$(awk '/android:name="arno.di.loreto.crashlyticsforandroidwear.activities.MainActivity"/ { capture = 1 } capture { print } capture && /<\/activity>/ { exit }' "$MOBILE_MANIFEST")
+wear_launcher_manifest=$(awk '/android:name="arno.di.loreto.crashlyticsforandroidwear.activities.MainWearActivity"/ { capture = 1 } capture { print } capture && /<\/activity>/ { exit }' "$WEAR_MANIFEST")
+for launcher_manifest in "$mobile_launcher_manifest" "$wear_launcher_manifest"; do
+  if [ "$(printf '%s\n' "$launcher_manifest" | grep -Fc 'android:exported="true"')" -ne 1 ] ||
+    [ "$(printf '%s\n' "$launcher_manifest" | grep -c '<intent-filter>' || true)" -ne 1 ] ||
+    [ "$(printf '%s\n' "$launcher_manifest" | grep -c '<action ' || true)" -ne 1 ] ||
+    [ "$(printf '%s\n' "$launcher_manifest" | grep -c '<category ' || true)" -ne 1 ] ||
+    ! printf '%s\n' "$launcher_manifest" | grep -Fq '<action android:name="android.intent.action.MAIN" />' ||
+    ! printf '%s\n' "$launcher_manifest" | grep -Fq '<category android:name="android.intent.category.LAUNCHER" />'; then
+    printf '%s\n' "Both Android launcher activities must be explicitly exported with exactly MAIN/LAUNCHER." >&2
+    exit 1
+  fi
+done
+
+if [ "$(grep -Fc 'android:name="arno.di.loreto.crashlyticsforandroidwear.wearable.WearableListenerBroadcaster"' "$MOBILE_MANIFEST")" -ne 1 ]; then
+  printf '%s\n' "Mobile manifest must declare exactly one Wear listener service." >&2
+  exit 1
+fi
+wear_listener_manifest=$(awk '/android:name="arno.di.loreto.crashlyticsforandroidwear.wearable.WearableListenerBroadcaster"/ { capture = 1 } capture { print } capture && /<\/service>/ { exit }' "$MOBILE_MANIFEST")
+if [ "$(printf '%s\n' "$wear_listener_manifest" | grep -Fc 'android:exported="true"')" -ne 1 ] ||
+  [ "$(printf '%s\n' "$wear_listener_manifest" | grep -Fc 'tools:ignore="ExportedService"')" -ne 1 ] ||
+  [ "$(printf '%s\n' "$wear_listener_manifest" | grep -c '<action ' || true)" -ne 1 ] ||
+  ! printf '%s\n' "$wear_listener_manifest" | grep -Fq '<action android:name="com.google.android.gms.wearable.BIND_LISTENER" />'; then
+  printf '%s\n' "Mobile Wear listener must be explicitly exported for exactly BIND_LISTENER." >&2
+  exit 1
+fi
+
+for receiver_name in \
+  "arno.di.loreto.crashlyticsforandroidwear.crashlytics.CrashlyticsWearableListenerReceiver" \
+  "arno.di.loreto.crashlyticsforandroidwear.dummy.DummyWearableListenerReceiver"; do
+  receiver_manifest=$(awk -v name="$receiver_name" 'index($0, "android:name=\"" name "\"") { capture = 1 } capture { print } capture && /<\/receiver>/ { exit }' "$MOBILE_MANIFEST")
+  if [ "$(printf '%s\n' "$receiver_manifest" | grep -Fc 'android:exported="false"')" -ne 1 ]; then
+    printf '%s\n' "Mobile Crashlytics receivers must be explicitly non-exported: $receiver_name" >&2
+    exit 1
+  fi
+done
+
+for service_name in \
+  "arno.di.loreto.crashlyticsforandroidwear.crashlytics.CrashlyticsWearIntentService" \
+  "arno.di.loreto.crashlyticsforandroidwear.services.SendDummyMessageIntentService"; do
+  service_manifest=$(awk -v name="$service_name" 'index($0, "android:name=\"" name "\"") { capture = 1 } capture { print } capture && /\/>/ { exit }' "$WEAR_MANIFEST")
+  if [ "$(printf '%s\n' "$service_manifest" | grep -Fc 'android:exported="false"')" -ne 1 ] ||
+    [ "$(printf '%s\n' "$service_manifest" | grep -Fc 'android:process=":error"')" -ne 1 ]; then
+    printf '%s\n' "Internal Wear intent services must be non-exported and keep their isolated process: $service_name" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "Status: Completed" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "CodeQL alert 1" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "fresh clone" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "Twenty-nine focused mutations" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "42f2da730712fea266ad41ee0b8ff26df06d32e9" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "push run \`27404727879\`" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "pull-request run \`27404729914\`" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "CodeQL run \`27404728054\`" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "zero open code-scanning alerts" "$COMPONENT_EXPORT_PLAN" ||
+  ! grep -Fq "do not broaden it into lint.xml" "$COMPONENT_EXPORT_PLAN"; then
+  printf '%s\n' "Android component export plan must record completed local and hosted verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Both launcher activities and the Google Play services Wear listener" "$README" ||
+  ! grep -Fq "Both launcher activities are explicitly exported" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "every Android component export policy explicit" "$ROOT_DIR/CHANGES.md"; then
+  printf '%s\n' "Documentation must record the explicit Android component trust boundaries." >&2
   exit 1
 fi
 
@@ -445,38 +581,106 @@ if ! grep -Fq "GitHub Actions" "$README"; then
   exit 1
 fi
 
-if ! grep -Fq "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" "$ROOT_DIR/.github/workflows/check.yml" ||
-  ! grep -Fq "make check" "$ROOT_DIR/.github/workflows/check.yml"; then
-  printf '%s\n' "GitHub Actions check workflow must check out the repository and run make check." >&2
+if ! grep -Fq "does not persist checkout credentials" "$README"; then
+  printf '%s\n' "README must document the credential-free checkout boundary." >&2
   exit 1
 fi
 
-if ! grep -Fq "permissions:" "$ROOT_DIR/.github/workflows/check.yml" ||
-  ! grep -Fq "contents: read" "$ROOT_DIR/.github/workflows/check.yml"; then
-  printf '%s\n' "GitHub Actions check workflow must keep repository access read-only." >&2
+if [ "$(grep -Ec '^[[:space:]]+uses: actions/checkout@' "$CI_WORKFLOW")" -ne 1 ]; then
+  printf '%s\n' "GitHub Actions must contain exactly one checkout step." >&2
   exit 1
 fi
 
-if ! grep -Fq 'ANDROID_HOME: ""' "$ROOT_DIR/.github/workflows/check.yml" ||
-  ! grep -Fq 'ANDROID_SDK_ROOT: ""' "$ROOT_DIR/.github/workflows/check.yml"; then
-  printf '%s\n' "GitHub Actions must clear hosted Android SDK variables for the legacy SDK-free baseline." >&2
+if ! awk '
+  function finish_step() {
+    if (checkout) {
+      checkout_count++
+      if (persist_credentials) {
+        secure_checkout_count++
+      }
+    }
+    checkout = 0
+    with_block = 0
+    persist_credentials = 0
+  }
+
+  /^      - / {
+    finish_step()
+  }
+
+  /^        uses: actions\/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10([[:space:]]+#.*)?$/ {
+    checkout = 1
+  }
+
+  checkout && /^        with:$/ {
+    with_block = 1
+  }
+
+  checkout && with_block && /^          persist-credentials: false$/ {
+    persist_credentials = 1
+  }
+
+  END {
+    finish_step()
+    exit !(checkout_count == 1 && secure_checkout_count == 1)
+  }
+' "$CI_WORKFLOW"; then
+  printf '%s\n' "The pinned checkout step must disable persisted credentials." >&2
   exit 1
 fi
 
-if ! grep -Fq "runs-on: ubuntu-24.04" "$ROOT_DIR/.github/workflows/check.yml"; then
-  printf '%s\n' "GitHub Actions must use the stable Ubuntu 24.04 runner." >&2
+if ! awk '
+  /^permissions:$/ {
+    permissions_count++
+    in_permissions = 1
+    next
+  }
+
+  in_permissions && /^[^[:space:]]/ {
+    in_permissions = 0
+  }
+
+  in_permissions && /^  contents: read$/ {
+    contents_read++
+    next
+  }
+
+  in_permissions && /^  [[:alnum:]_-]+:/ {
+    unexpected_permission++
+  }
+
+  END {
+    exit !(permissions_count == 1 && contents_read == 1 && unexpected_permission == 0)
+  }
+' "$CI_WORKFLOW" ||
+  grep -Eq '^[[:space:]]*permissions:[[:space:]]*write-all([[:space:]]*(#.*)?)?$' "$CI_WORKFLOW" ||
+  grep -Eq '^[[:space:]]+[[:alnum:]_-]+:[[:space:]]*write([[:space:]]*(#.*)?)?$' "$CI_WORKFLOW"; then
+  printf '%s\n' "GitHub Actions must grant only top-level read access to repository contents." >&2
+  exit 1
+fi
+
+for workflow_contract in \
+  "workflow_dispatch:" \
+  "cancel-in-progress: true" \
+  "runs-on: ubuntu-24.04" \
+  "timeout-minutes: 5" \
+  'ANDROID_HOME: ""' \
+  'ANDROID_SDK_ROOT: ""' \
+  "run: make check"; do
+  if ! grep -Fq "$workflow_contract" "$CI_WORKFLOW"; then
+    printf '%s\n' "GitHub Actions workflow must keep contract: $workflow_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'group: check-${{ github.workflow }}-${{ github.ref }}' "$CI_WORKFLOW"; then
+  printf '%s\n' "GitHub Actions workflow must group superseded runs consistently." >&2
   exit 1
 fi
 
 if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE" ||
   [ "$(grep -c -- '--project-dir "$(ROOT)"' "$MAKEFILE")" -ne 4 ]; then
   printf '%s\n' "Make targets must resolve Gradle and its project directory from the repository root." >&2
-  exit 1
-fi
-
-if ! grep -Fq "workflow_dispatch:" "$ROOT_DIR/.github/workflows/check.yml" ||
-  ! grep -Fq "timeout-minutes: 5" "$ROOT_DIR/.github/workflows/check.yml"; then
-  printf '%s\n' "GitHub Actions check workflow must support bounded manual verification." >&2
   exit 1
 fi
 

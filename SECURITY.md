@@ -24,6 +24,11 @@ Helpful reports include:
 
 ## Project Security Posture
 
+- Both launcher activities are explicitly exported for user entry, and the
+  mobile Wear listener is explicitly exported only for the legacy Google Play
+  services `BIND_LISTENER` action. Internal crash receivers and Wear intent
+  services are explicitly non-exported.
+
 - This repository appears to be an Android mobile application or sample. The active security scope is the code and documentation on the default branch.
 - Review found external API integrations or credential-adjacent configuration; changes in those areas should receive security-focused review before merge.
 - Review found network clients, sockets, web APIs, or service endpoints; changes in those areas should receive security-focused review before merge.
@@ -39,6 +44,9 @@ Helpful reports include:
   checkout action, read-only repository access, and hosted Android SDK
   variables cleared; review workflow, Gradle, and checker changes as part of
   the supply-chain surface.
+- The direct wrapper uses a generated Gradle 8.14.5 bootstrap and pins the
+  official Gradle 1.12 distribution checksum; review all wrapper artifacts and
+  checksum changes as one supply-chain boundary.
 
 ## Mobile Privacy Notes
 
