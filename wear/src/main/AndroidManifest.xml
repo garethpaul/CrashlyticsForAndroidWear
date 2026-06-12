@@ -8,14 +8,21 @@
         android:theme="@android:style/Theme.DeviceDefault">
         <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
         <activity
-            android:name="arno.di.loreto.crashlyticsforandroidwear.activities.MainWearActivity">
+            android:name="arno.di.loreto.crashlyticsforandroidwear.activities.MainWearActivity"
+            android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name="arno.di.loreto.crashlyticsforandroidwear.crashlytics.CrashlyticsWearIntentService" android:process=":error"></service>
-        <service android:name="arno.di.loreto.crashlyticsforandroidwear.services.SendDummyMessageIntentService" android:process=":error"></service>
+        <service
+            android:name="arno.di.loreto.crashlyticsforandroidwear.crashlytics.CrashlyticsWearIntentService"
+            android:exported="false"
+            android:process=":error" />
+        <service
+            android:name="arno.di.loreto.crashlyticsforandroidwear.services.SendDummyMessageIntentService"
+            android:exported="false"
+            android:process=":error" />
     </application>
 
 </manifest>
