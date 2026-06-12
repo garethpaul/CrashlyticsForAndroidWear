@@ -9,8 +9,9 @@
   Ubuntu 24.04.
 - Added a lightweight GitHub Actions workflow that runs `make check` for the
   Crashlytics mobile/wear baseline.
-- Pinned the checkout action, limited repository access to read-only, and
-  cleared hosted Android SDK variables for deterministic SDK-free checks.
+- Pinned the checkout action, disabled persisted checkout credentials, limited
+  repository access to read-only, and cleared hosted Android SDK variables for
+  deterministic SDK-free checks.
 - Extended the SDK-free baseline to require the CI workflow and completed CI
   plan.
 

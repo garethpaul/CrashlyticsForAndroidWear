@@ -32,6 +32,7 @@ WEAR_API="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/
 WEAR_UNCAUGHT_HANDLER="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrachlyticsWearUncaughtExceptionHandler.java"
 WEAR_SERVICE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrashlyticsWearIntentService.java"
 DUMMY_SERVICE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/services/SendDummyMessageIntentService.java"
+CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 
 require_file() {
   path=$1
@@ -423,38 +424,106 @@ if ! grep -Fq "GitHub Actions" "$README"; then
   exit 1
 fi
 
-if ! grep -Fq "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" "$ROOT_DIR/.github/workflows/check.yml" ||
-  ! grep -Fq "make check" "$ROOT_DIR/.github/workflows/check.yml"; then
-  printf '%s\n' "GitHub Actions check workflow must check out the repository and run make check." >&2
+if ! grep -Fq "does not persist checkout credentials" "$README"; then
+  printf '%s\n' "README must document the credential-free checkout boundary." >&2
   exit 1
 fi
 
-if ! grep -Fq "permissions:" "$ROOT_DIR/.github/workflows/check.yml" ||
-  ! grep -Fq "contents: read" "$ROOT_DIR/.github/workflows/check.yml"; then
-  printf '%s\n' "GitHub Actions check workflow must keep repository access read-only." >&2
+if [ "$(grep -Ec '^[[:space:]]+uses: actions/checkout@' "$CI_WORKFLOW")" -ne 1 ]; then
+  printf '%s\n' "GitHub Actions must contain exactly one checkout step." >&2
   exit 1
 fi
 
-if ! grep -Fq 'ANDROID_HOME: ""' "$ROOT_DIR/.github/workflows/check.yml" ||
-  ! grep -Fq 'ANDROID_SDK_ROOT: ""' "$ROOT_DIR/.github/workflows/check.yml"; then
-  printf '%s\n' "GitHub Actions must clear hosted Android SDK variables for the legacy SDK-free baseline." >&2
+if ! awk '
+  function finish_step() {
+    if (checkout) {
+      checkout_count++
+      if (persist_credentials) {
+        secure_checkout_count++
+      }
+    }
+    checkout = 0
+    with_block = 0
+    persist_credentials = 0
+  }
+
+  /^      - / {
+    finish_step()
+  }
+
+  /^        uses: actions\/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10([[:space:]]+#.*)?$/ {
+    checkout = 1
+  }
+
+  checkout && /^        with:$/ {
+    with_block = 1
+  }
+
+  checkout && with_block && /^          persist-credentials: false$/ {
+    persist_credentials = 1
+  }
+
+  END {
+    finish_step()
+    exit !(checkout_count == 1 && secure_checkout_count == 1)
+  }
+' "$CI_WORKFLOW"; then
+  printf '%s\n' "The pinned checkout step must disable persisted credentials." >&2
   exit 1
 fi
 
-if ! grep -Fq "runs-on: ubuntu-24.04" "$ROOT_DIR/.github/workflows/check.yml"; then
-  printf '%s\n' "GitHub Actions must use the stable Ubuntu 24.04 runner." >&2
+if ! awk '
+  /^permissions:$/ {
+    permissions_count++
+    in_permissions = 1
+    next
+  }
+
+  in_permissions && /^[^[:space:]]/ {
+    in_permissions = 0
+  }
+
+  in_permissions && /^  contents: read$/ {
+    contents_read++
+    next
+  }
+
+  in_permissions && /^  [[:alnum:]_-]+:/ {
+    unexpected_permission++
+  }
+
+  END {
+    exit !(permissions_count == 1 && contents_read == 1 && unexpected_permission == 0)
+  }
+' "$CI_WORKFLOW" ||
+  grep -Eq '^[[:space:]]*permissions:[[:space:]]*write-all([[:space:]]*(#.*)?)?$' "$CI_WORKFLOW" ||
+  grep -Eq '^[[:space:]]+[[:alnum:]_-]+:[[:space:]]*write([[:space:]]*(#.*)?)?$' "$CI_WORKFLOW"; then
+  printf '%s\n' "GitHub Actions must grant only top-level read access to repository contents." >&2
+  exit 1
+fi
+
+for workflow_contract in \
+  "workflow_dispatch:" \
+  "cancel-in-progress: true" \
+  "runs-on: ubuntu-24.04" \
+  "timeout-minutes: 5" \
+  'ANDROID_HOME: ""' \
+  'ANDROID_SDK_ROOT: ""' \
+  "run: make check"; do
+  if ! grep -Fq "$workflow_contract" "$CI_WORKFLOW"; then
+    printf '%s\n' "GitHub Actions workflow must keep contract: $workflow_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'group: check-${{ github.workflow }}-${{ github.ref }}' "$CI_WORKFLOW"; then
+  printf '%s\n' "GitHub Actions workflow must group superseded runs consistently." >&2
   exit 1
 fi
 
 if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE" ||
   [ "$(grep -c -- '--project-dir "$(ROOT)"' "$MAKEFILE")" -ne 4 ]; then
   printf '%s\n' "Make targets must resolve Gradle and its project directory from the repository root." >&2
-  exit 1
-fi
-
-if ! grep -Fq "workflow_dispatch:" "$ROOT_DIR/.github/workflows/check.yml" ||
-  ! grep -Fq "timeout-minutes: 5" "$ROOT_DIR/.github/workflows/check.yml"; then
-  printf '%s\n' "GitHub Actions check workflow must support bounded manual verification." >&2
   exit 1
 fi
 

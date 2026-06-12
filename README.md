@@ -60,8 +60,8 @@ scripts/check-baseline.sh
 
 GitHub Actions runs `make check` on pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only
-repository access, an Ubuntu 24.04 runner, and a bounded runtime. It explicitly clears hosted Android
-SDK variables so Gradle 1.12 and the discontinued Fabric/JCenter stack are not
+repository access, an Ubuntu 24.04 runner, and a bounded runtime. It does not persist checkout credentials and explicitly clears hosted Android SDK
+variables so Gradle 1.12 and the discontinued Fabric/JCenter stack are not
 invoked by an incompatible modern runner image.
 
 When the legacy Android toolchain can resolve all discontinued artifacts, use:
