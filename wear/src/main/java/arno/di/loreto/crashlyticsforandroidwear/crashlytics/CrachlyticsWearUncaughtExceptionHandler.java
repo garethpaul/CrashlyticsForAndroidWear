@@ -46,7 +46,7 @@ public class CrachlyticsWearUncaughtExceptionHandler implements Thread.UncaughtE
      */
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
-        Log.e(MYLOGGER, "uncaughtException", ex);
+        Log.e(MYLOGGER, "Uncaught exception received");
         if (mApplication != null && ex != null) {
             //Do not forget to declare CrashlyticsWearIntentService in AndroidManifest.xml
             Intent errorIntent = new Intent(mApplication, CrashlyticsWearIntentService.class);

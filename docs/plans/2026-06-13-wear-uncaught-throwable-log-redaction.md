@@ -1,13 +1,13 @@
 ---
 title: Wear Uncaught Throwable Log Redaction
 type: security
-status: planned
+status: completed
 date: 2026-06-13
 ---
 
 # Wear Uncaught Throwable Log Redaction
 
-## Status: Planned
+## Status: Completed
 
 ## Problem Frame
 
@@ -67,3 +67,27 @@ payload and are not duplicated into local logs.
 - The handler runs on a fatal path, so the change must not introduce formatting,
   allocation, or exception-prone work beyond the existing constant log call.
 - Full paired-device crash delivery remains outside local validation.
+
+## Work Completed
+
+- Replaced the Wear uncaught-handler throwable overload with a constant receipt
+  message that does not expose exception text or stack frames to Logcat.
+- Preserved the original throwable in the crash service intent and in previous
+  default-handler delegation.
+- Added source, documentation, and completed-plan contracts for the privacy
+  boundary.
+
+## Verification Completed
+
+- `scripts/check-baseline.sh`, `make lint`, `make test`, `make tasks`,
+  `make build`, and `make check` passed.
+- The absolute-path `make check` wrapper passed from `/tmp`.
+- Android lint: both mobile and Wear variants reported zero lint issues.
+- Gradle checks and task discovery passed, and both debug APKs assembled
+  successfully with the configured Android SDK.
+- `sh -n scripts/check-baseline.sh` and `git diff --check` passed.
+- Eight isolated hostile mutations were rejected across throwable logging,
+  receipt presence, report forwarding, previous-handler delegation,
+  documentation, plan status, and verification evidence.
+- Paired-device crash delivery was not exercised; protocol payloads, manifests,
+  dependencies, credentials, and workflows are unchanged.

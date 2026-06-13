@@ -28,6 +28,7 @@ COMPONENT_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-android-component-export-
 WEAR_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-data-layer-send-timeouts.md"
 UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-13-dummy-message-utf8-wire-format.md"
 SNAPSHOT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-event-immutable-snapshots.md"
+UNCAUGHT_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -104,6 +105,7 @@ for path in \
   "docs/plans/2026-06-12-gradle-wrapper-verification.md" \
   "docs/plans/2026-06-13-dummy-message-utf8-wire-format.md" \
   "docs/plans/2026-06-13-wear-event-immutable-snapshots.md" \
+  "docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -655,6 +657,40 @@ if ! grep -Fq "mApplication != null && ex != null" "$WEAR_UNCAUGHT_HANDLER"; the
   printf '%s\n' "Uncaught handler must guard missing application and throwable before starting the service." >&2
   exit 1
 fi
+
+if grep -Eq 'Log\.[A-Za-z]+\([^;]*,[[:space:]]*ex[[:space:]]*\)' "$WEAR_UNCAUGHT_HANDLER" ||
+  ! grep -Fq 'Log.e(MYLOGGER, "Uncaught exception received")' "$WEAR_UNCAUGHT_HANDLER"; then
+  printf '%s\n' "Uncaught handler must log receipt without writing the throwable to Logcat." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'errorIntent.putExtra(CrashlyticsWearIntentService.EXTRA_DATA_ERROR, ex)' "$WEAR_UNCAUGHT_HANDLER" ||
+  ! grep -Fq 'mDefaultUncaughtExceptionHandler.uncaughtException(thread, ex)' "$WEAR_UNCAUGHT_HANDLER"; then
+  printf '%s\n' "Uncaught handler must preserve crash forwarding and previous-handler delegation." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'The Wear uncaught-exception handler records receipt without writing the throwable' "$README" ||
+  ! grep -Fq 'Wear uncaught-exception handling must not write throwable stack traces to Logcat' "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq 'Keep uncaught Wear crash receipt logs free of throwable stack traces' "$VISION" ||
+  ! grep -Fq 'Redacted the Wear uncaught-exception receipt log' "$CHANGES" ||
+  ! grep -Fq 'Wear uncaught-exception receipt logs must never include the Throwable' "$ROOT_DIR/AGENTS.md"; then
+  printf '%s\n' "Wear uncaught throwable redaction documentation must stay synchronized." >&2
+  exit 1
+fi
+
+for plan_contract in \
+  'status: completed' \
+  '## Status: Completed' \
+  '## Work Completed' \
+  '## Verification Completed' \
+  'both mobile and Wear variants reported zero lint issues' \
+  'Eight isolated hostile mutations were rejected'; do
+  if ! grep -Fq "$plan_contract" "$UNCAUGHT_LOG_PLAN"; then
+    printf '%s\n' "Wear uncaught throwable redaction plan must keep completed evidence: $plan_contract" >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq "mDefaultUncaughtExceptionHandler != null" "$WEAR_UNCAUGHT_HANDLER"; then
   printf '%s\n' "Uncaught handler must guard a missing previous default handler." >&2
