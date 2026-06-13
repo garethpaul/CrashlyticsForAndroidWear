@@ -121,6 +121,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   before they reach the paired mobile receiver.
 - Wear throwable stack traces are serialized for the phone without local debug
   logging before the report is forwarded.
+- The Wear uncaught-exception handler records receipt without writing the throwable
+  or its stack trace to Logcat before forwarding and default-handler delegation.
 - Mobile receivers log only the report type before forwarding reconstructed
   Wear throwable payloads to Crashlytics.
 - Mobile receivers forward only the declared Wear device metadata keys to
@@ -158,6 +160,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Crashlytics report type allowlisting.
 - See `docs/plans/2026-06-09-wear-throwable-log-redaction.md` for the Wear
   throwable logging baseline.
+- See `docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md` for the
+  uncaught-handler receipt-log boundary.
 - See `docs/plans/2026-06-09-mobile-throwable-log-redaction.md` for mobile
   Crashlytics receipt log redaction.
 - See `docs/plans/2026-06-09-wear-connected-node-send-guard.md` for

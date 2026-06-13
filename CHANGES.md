@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Redacted the Wear uncaught-exception receipt log while preserving crash report
+  forwarding and previous default-handler delegation.
 - Made broadcast message and node wrappers immutable snapshots with final
   fields and no public mutators.
 - Defensively copied Wear message payload bytes on construction and access, and
