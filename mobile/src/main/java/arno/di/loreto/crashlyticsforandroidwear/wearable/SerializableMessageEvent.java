@@ -7,52 +7,40 @@ import com.google.android.gms.wearable.MessageEvent;
  */
 public class SerializableMessageEvent implements MessageEvent {
 
-    private byte[] data;
-    private String path;
-    private int requestId;
-    private String sourceNodeId;
+    private final byte[] data;
+    private final String path;
+    private final int requestId;
+    private final String sourceNodeId;
 
     public SerializableMessageEvent(MessageEvent messageEvent){
         this(messageEvent.getData(), messageEvent.getPath(), messageEvent.getRequestId(), messageEvent.getSourceNodeId());
     }
 
     public SerializableMessageEvent(byte[] data, String path, int requestId, String sourceNodeId){
-        this.data = data;
+        this.data = copyData(data);
         this.path = path;
         this.requestId = requestId;
         this.sourceNodeId = sourceNodeId;
     }
 
     public byte[] getData() {
-        return data;
-    }
-
-    public void setData(byte[] data) {
-        this.data = data;
+        return copyData(data);
     }
 
     public String getPath() {
         return path;
     }
 
-    public void setPath(String path) {
-        this.path = path;
-    }
-
     public int getRequestId() {
         return requestId;
-    }
-
-    public void setRequestId(int requestId) {
-        this.requestId = requestId;
     }
 
     public String getSourceNodeId() {
         return sourceNodeId;
     }
 
-    public void setSourceNodeId(String sourceNodeId) {
-        this.sourceNodeId = sourceNodeId;
+    private static byte[] copyData(byte[] data) {
+        return data == null ? null : data.clone();
     }
 
 }

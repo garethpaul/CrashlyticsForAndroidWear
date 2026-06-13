@@ -2,7 +2,7 @@
 title: Wear Event Immutable Snapshots
 type: fix
 date: 2026-06-13
-status: planned
+status: completed
 ---
 
 # Wear Event Immutable Snapshots
@@ -82,6 +82,24 @@ captured, violating the snapshot boundary used during internal event dispatch.
   missing test wiring, and incomplete plan status; each mutation must fail.
 - Do not claim paired-device event delivery testing without a connected phone
   and Wear device.
+
+## Verification Results
+
+- `scripts/test-wear-event-snapshots.sh` passed defensive-copy, null payload,
+  scalar getter, final-field, and no-setter checks against the production
+  wrapper classes.
+- Configured-SDK repository and external-directory `make check` passed mobile
+  and Wear lint with zero issues, Gradle checks, task discovery, and both debug
+  APK assemblies.
+- An intentionally absent `ANDROID_HOME` passed the SDK-free static baseline
+  and executable Java snapshot fixture while truthfully skipping Gradle tasks.
+- Shell syntax, Java compilation, whitespace, secret, and generated-artifact
+  checks passed.
+- Eight isolated hostile mutations covering constructor and getter aliasing,
+  field finality, restored setters, null-payload behavior, scalar values,
+  missing test wiring, and completed-plan status were rejected.
+- Paired-device event delivery was not exercised; broadcast dispatch, message
+  paths, dependencies, manifests, wrapper, and workflows are unchanged.
 
 ## Prioritized Follow-Ups
 

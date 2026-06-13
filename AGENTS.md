@@ -53,6 +53,7 @@
 - The Gradle wrapper is intentionally kept on the legacy 1.12 distribution, but it must use HTTPS. Fabric and Play Services Wear dependencies are pinned to avoid dynamic resolution drift, and the unused legacy wearable support dependency is intentionally removed.
 - Debug builds disable Fabric resource tasks while the all-zero Crashlytics API key placeholder is present. Use local untracked configuration for real Crashlytics credentials when testing against Fabric.
 - Wear crash forwarding sends stack traces as text, package-scopes internal broadcasts, and disconnects GoogleApiClient clients after message sends.
+- Wear message and node wrappers are immutable snapshots; message payload arrays are defensively copied on capture and access.
 
 ## Agent workflow
 

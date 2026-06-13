@@ -7,8 +7,8 @@ import com.google.android.gms.wearable.Node;
  */
 public class SerializableNode implements Node {
 
-    private String displayName;
-    private String id;
+    private final String displayName;
+    private final String id;
 
     public SerializableNode(Node peer){
         this(peer.getDisplayName(), peer.getId());
@@ -23,15 +23,8 @@ public class SerializableNode implements Node {
         return displayName;
     }
 
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
 }

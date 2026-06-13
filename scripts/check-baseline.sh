@@ -27,6 +27,9 @@ METADATA_PRIVACY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-crash-metadata-privacy-bo
 COMPONENT_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-android-component-export-contract.md"
 WEAR_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-data-layer-send-timeouts.md"
 UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-13-dummy-message-utf8-wire-format.md"
+SNAPSHOT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-event-immutable-snapshots.md"
+SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
+SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
 CHANGES="$ROOT_DIR/CHANGES.md"
 VISION="$ROOT_DIR/VISION.md"
@@ -37,6 +40,8 @@ WEAR_LINT="$ROOT_DIR/wear/lint.xml"
 MOBILE_RECEIVER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrashlyticsWearableListenerReceiver.java"
 WEARABLE_BROADCASTER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/WearableListenerBroadcaster.java"
 WEARABLE_RECEIVER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/WearableListenerReceiver.java"
+MESSAGE_SNAPSHOT="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/SerializableMessageEvent.java"
+NODE_SNAPSHOT="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/SerializableNode.java"
 WEAR_API="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrashlyticsWear.java"
 WEAR_UNCAUGHT_HANDLER="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrachlyticsWearUncaughtExceptionHandler.java"
 WEAR_SERVICE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrashlyticsWearIntentService.java"
@@ -98,6 +103,7 @@ for path in \
   "docs/plans/2026-06-12-wear-data-layer-send-timeouts.md" \
   "docs/plans/2026-06-12-gradle-wrapper-verification.md" \
   "docs/plans/2026-06-13-dummy-message-utf8-wire-format.md" \
+  "docs/plans/2026-06-13-wear-event-immutable-snapshots.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -105,6 +111,8 @@ for path in \
   "settings.gradle" \
   "build.gradle" \
   "scripts/Utf8RoundTripCheck.java" \
+  "scripts/WearEventSnapshotCheck.java" \
+  "scripts/test-wear-event-snapshots.sh" \
   "mobile/build.gradle" \
   "mobile/lint.xml" \
   "wear/build.gradle" \
@@ -417,6 +425,44 @@ if ! grep -Fq "new SerializableMessageEvent(" "$WEARABLE_RECEIVER" ||
   ! grep -Fq "intent.getByteArrayExtra(WearableListenerBroadcaster.EXTRA_MESSAGE_DATA)" "$WEARABLE_RECEIVER" ||
   ! grep -Fq "intent.getStringExtra(WearableListenerBroadcaster.EXTRA_NODE_ID)" "$WEARABLE_RECEIVER"; then
   printf '%s\n' "Wear event receiver must rebuild typed events from Intent extras." >&2
+  exit 1
+fi
+
+if ! grep -Fq "private final byte[] data;" "$MESSAGE_SNAPSHOT" || \
+  ! grep -Fq "private final String path;" "$MESSAGE_SNAPSHOT" || \
+  ! grep -Fq "this.data = copyData(data);" "$MESSAGE_SNAPSHOT" || \
+  ! grep -Fq "return copyData(data);" "$MESSAGE_SNAPSHOT" || \
+  ! grep -Fq "return data == null ? null : data.clone();" "$MESSAGE_SNAPSHOT" || \
+  grep -Fq "public void set" "$MESSAGE_SNAPSHOT"; then
+  printf '%s\n' "Wear message events must remain immutable defensive snapshots." >&2
+  exit 1
+fi
+
+if ! grep -Fq "private final String displayName;" "$NODE_SNAPSHOT" || \
+  ! grep -Fq "private final String id;" "$NODE_SNAPSHOT" || \
+  grep -Fq "public void set" "$NODE_SNAPSHOT"; then
+  printf '%s\n' "Wear nodes must remain immutable snapshots." >&2
+  exit 1
+fi
+
+if ! grep -Fq '$(ROOT)scripts/test-wear-event-snapshots.sh' "$MAKEFILE" || \
+  ! grep -Fq "Constructor must copy message data." "$SNAPSHOT_CHECK" || \
+  ! grep -Fq "Getter must copy message data." "$SNAPSHOT_CHECK" || \
+  ! grep -Fq "Null message data must remain null." "$SNAPSHOT_CHECK" || \
+  ! grep -Fq "Modifier.isFinal" "$SNAPSHOT_CHECK" || \
+  ! grep -Fq 'javac -d "$CLASS_DIR"' "$SNAPSHOT_TEST" || \
+  ! grep -Fq 'java -cp "$CLASS_DIR" WearEventSnapshotCheck' "$SNAPSHOT_TEST"; then
+  printf '%s\n' "Wear event snapshot fixture and test wiring must remain enforced." >&2
+  exit 1
+fi
+
+if ! grep -Fq "immutable snapshots" "$README" || \
+  ! grep -Fq "immutable snapshots" "$CHANGES" || \
+  ! grep -Fq "event wrappers immutable" "$VISION" || \
+  ! grep -Fq "R6. A standalone Java fixture" "$SNAPSHOT_PLAN" || \
+  ! grep -Fq "status: completed" "$SNAPSHOT_PLAN" || \
+  ! grep -Fq "Eight isolated hostile mutations" "$SNAPSHOT_PLAN"; then
+  printf '%s\n' "Wear event snapshot documentation and plan contracts must remain checked in." >&2
   exit 1
 fi
 
