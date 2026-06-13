@@ -2,6 +2,10 @@
 
 ## 2026-06-13
 
+- Made broadcast message and node wrappers immutable snapshots with final
+  fields and no public mutators.
+- Defensively copied Wear message payload bytes on construction and access, and
+  added an SDK-independent executable Java contract for aliasing and shape.
 - Made the dummy Wear-to-mobile text channel encode and decode explicitly as
   UTF-8, with an executable accented, CJK, and emoji round-trip fixture.
 

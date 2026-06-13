@@ -132,6 +132,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   so listener callbacks do not retain Google Play Services resources.
 - Internal Wear listener broadcasts use typed Intent extras instead of Java object serialization
   for peer and message fields.
+- Wear message and node wrappers are immutable snapshots, and message payload
+  bytes are copied both when captured and when read by a receiver.
 - Wear message senders skip missing connected-node results and node ids before
   sending crash or dummy payloads through the Data Layer.
 - Wear message senders skip missing send results and statuses before reading

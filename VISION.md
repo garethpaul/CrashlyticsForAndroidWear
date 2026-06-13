@@ -30,6 +30,7 @@ Priority:
 - Guard connected Wear nodes before sending Data Layer messages
 - Keep internal Wear event broadcasts on typed Intent extras instead of Java
   object serialization
+- Keep Wear event wrappers immutable with defensively copied message payloads
 - Guard Wear Data Layer send results before reading status details
 - Bound Wear Data Layer connection, discovery, and send waits
 - Keep dummy Wear-to-mobile text messages on an explicit UTF-8 wire format
