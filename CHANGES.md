@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-13
+
+- Made the dummy Wear-to-mobile text channel encode and decode explicitly as
+  UTF-8, with an executable accented, CJK, and emoji round-trip fixture.
+
 ## 2026-06-12
 
 - Added an authenticated Gradle wrapper with generated bootstrap artifacts,

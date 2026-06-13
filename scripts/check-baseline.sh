@@ -26,7 +26,10 @@ CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 METADATA_PRIVACY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-crash-metadata-privacy-boundary.md"
 COMPONENT_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-android-component-export-contract.md"
 WEAR_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-data-layer-send-timeouts.md"
+UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-13-dummy-message-utf8-wire-format.md"
 MAKEFILE="$ROOT_DIR/Makefile"
+CHANGES="$ROOT_DIR/CHANGES.md"
+VISION="$ROOT_DIR/VISION.md"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 WEAR_MANIFEST="$ROOT_DIR/wear/src/main/AndroidManifest.xml"
 MOBILE_LINT="$ROOT_DIR/mobile/lint.xml"
@@ -38,6 +41,8 @@ WEAR_API="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/
 WEAR_UNCAUGHT_HANDLER="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrachlyticsWearUncaughtExceptionHandler.java"
 WEAR_SERVICE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/crashlytics/CrashlyticsWearIntentService.java"
 DUMMY_SERVICE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/services/SendDummyMessageIntentService.java"
+DUMMY_RECEIVER="$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/dummy/DummyWearableListenerReceiver.java"
+UTF8_CHECK="$ROOT_DIR/scripts/Utf8RoundTripCheck.java"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 
 require_sha256() {
@@ -92,12 +97,14 @@ for path in \
   "docs/plans/2026-06-12-android-component-export-contract.md" \
   "docs/plans/2026-06-12-wear-data-layer-send-timeouts.md" \
   "docs/plans/2026-06-12-gradle-wrapper-verification.md" \
+  "docs/plans/2026-06-13-dummy-message-utf8-wire-format.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "gradle/wrapper/gradle-wrapper.jar" \
   "settings.gradle" \
   "build.gradle" \
+  "scripts/Utf8RoundTripCheck.java" \
   "mobile/build.gradle" \
   "mobile/lint.xml" \
   "wear/build.gradle" \
@@ -524,9 +531,46 @@ if ! grep -Fq "path == null || path.length() == 0 || message == null || message.
   exit 1
 fi
 
-if ! grep -Fq "Ignoring dummy message without path" "$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/dummy/DummyWearableListenerReceiver.java" ||
-  ! grep -Fq "byte[] messageData = messageEvent.getData()" "$ROOT_DIR/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/dummy/DummyWearableListenerReceiver.java"; then
+if ! grep -Fq "Ignoring dummy message without path" "$DUMMY_RECEIVER" ||
+  ! grep -Fq "byte[] messageData = messageEvent.getData()" "$DUMMY_RECEIVER"; then
   printf '%s\n' "Dummy message receiver must guard missing path and payload data." >&2
+  exit 1
+fi
+
+for endpoint in "$DUMMY_SERVICE" "$DUMMY_RECEIVER"; do
+  if ! grep -Fq 'import java.nio.charset.Charset;' "$endpoint" ||
+    ! grep -Fq 'private static final Charset UTF_8 = Charset.forName("UTF-8");' "$endpoint"; then
+    printf '%s\n' "Dummy message endpoints must declare the explicit UTF-8 wire format." >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'message.getBytes(UTF_8)' "$DUMMY_SERVICE" ||
+  ! grep -Fq 'new String(messageData, UTF_8)' "$DUMMY_RECEIVER" ||
+  grep -Fq 'message.getBytes()' "$DUMMY_SERVICE" ||
+  grep -Fq 'new String(messageData)' "$DUMMY_RECEIVER"; then
+  printf '%s\n' "Dummy messages must encode and decode with the explicit UTF-8 wire format." >&2
+  exit 1
+fi
+
+for command_name in java javac; do
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    printf '%s\n' "Executable UTF-8 verification requires $command_name on PATH." >&2
+    exit 1
+  fi
+done
+
+utf8_test_dir=$(mktemp -d "${TMPDIR:-/tmp}/crashlytics-wear-utf8.XXXXXX")
+trap 'rm -rf "$utf8_test_dir"' EXIT HUP INT TERM
+javac -d "$utf8_test_dir" "$UTF8_CHECK"
+java -cp "$utf8_test_dir" Utf8RoundTripCheck
+rm -rf "$utf8_test_dir"
+trap - EXIT HUP INT TERM
+
+if ! grep -Fq 'private static final String MESSAGE = "caf\u00e9 \u6771\u4eac \ud83d\ude80";' "$UTF8_CHECK" ||
+  ! grep -Fq 'byte[] encoded = MESSAGE.getBytes(UTF_8);' "$UTF8_CHECK" ||
+  ! grep -Fq 'String decoded = new String(encoded, UTF_8);' "$UTF8_CHECK"; then
+  printf '%s\n' "UTF-8 verification must retain its accented, CJK, and emoji round-trip fixture." >&2
   exit 1
 fi
 
@@ -750,6 +794,22 @@ if ! grep -Fq "Wear message senders bound connection, node lookup, and per-node 
   exit 1
 fi
 
+if ! grep -Fq "Dummy text messages use UTF-8 on both Wear and mobile endpoints" "$README"; then
+  printf '%s\n' "README must document the dummy-message UTF-8 wire format." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Java 8 or newer JDK with `java` and `javac` on `PATH`' "$README"; then
+  printf '%s\n' "README must document the JDK required by the executable baseline fixture." >&2
+  exit 1
+fi
+
+if ! grep -Fq "dummy Wear-to-mobile text channel encode and decode explicitly" "$CHANGES" ||
+  ! grep -Fq "Keep dummy Wear-to-mobile text messages on an explicit UTF-8 wire format" "$VISION"; then
+  printf '%s\n' "Changelog and vision must document the dummy-message UTF-8 wire format." >&2
+  exit 1
+fi
+
 if ! grep -Fq "Mobile and wear app-data backup is disabled" "$README"; then
   printf '%s\n' "README must document the Android backup opt-out." >&2
   exit 1
@@ -869,6 +929,14 @@ fi
 if ! grep -Fq "Status: Completed" "$WEAR_TIMEOUT_PLAN" || \
    ! grep -Fq "make check" "$WEAR_TIMEOUT_PLAN"; then
   printf '%s\n' "Wear Data Layer timeout plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$UTF8_PLAN" ||
+  ! grep -Fq "Eleven hostile mutations were rejected" "$UTF8_PLAN" ||
+  ! grep -Fq 'make -f /absolute/path/Makefile check' "$UTF8_PLAN" ||
+  ! grep -Fq "Paired-device behavior was not exercised" "$UTF8_PLAN"; then
+  printf '%s\n' "Dummy-message UTF-8 plan must record completed local verification and its paired-device limit." >&2
   exit 1
 fi
 

@@ -10,6 +10,7 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
+import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -20,6 +21,7 @@ public class SendDummyMessageIntentService extends IntentService {
 
     private static final String MYLOGGER = SendDummyMessageIntentService.class.getName();
     private static final long DATA_LAYER_TIMEOUT_SECONDS = 5;
+    private static final Charset UTF_8 = Charset.forName("UTF-8");
     /**
      * The Intent's name.
      */
@@ -92,7 +94,7 @@ public class SendDummyMessageIntentService extends IntentService {
                 }
 
                 MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
-                        mApiClient, node.getId(), path, message.getBytes())
+                        mApiClient, node.getId(), path, message.getBytes(UTF_8))
                         .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                 if (result == null || result.getStatus() == null) {
                     Log.e(MYLOGGER, "Dummy message send finished without status, Node:" + node.getDisplayName());
