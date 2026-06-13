@@ -33,6 +33,7 @@ Additional scan context:
 ### Prerequisites
 
 - Git
+- Java 8 or newer JDK with `java` and `javac` on `PATH`
 - Android Studio or a compatible Android SDK
 - Gradle or the checked-in Gradle wrapper when present
 
@@ -137,6 +138,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Data Layer status details.
 - Wear message senders bound connection, node lookup, and per-node send waits
   to five seconds so stalled paired-device operations cannot hold a service indefinitely.
+- Dummy text messages use UTF-8 on both Wear and mobile endpoints so
+  non-ASCII payloads do not depend on either device's default charset.
 - Mobile and wear app-data backup is disabled by default for the crash
   forwarding sample.
 - Mobile and wear lint keep only the old missing API database runner error and
