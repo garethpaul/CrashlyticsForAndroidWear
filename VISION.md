@@ -43,6 +43,8 @@ Priority:
 
 Next priorities:
 
+- Execute the Crashlytics Wear device verification matrix against an exact
+  commit with paired test devices and a private test project
 - Document current build requirements and legacy dependency constraints
 - Replace dynamic dependency versions with reproducible versions
 - Modernize Fabric/Crashlytics and wearable APIs in a dedicated pass

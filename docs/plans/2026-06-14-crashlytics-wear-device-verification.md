@@ -1,6 +1,6 @@
 # Crashlytics Wear Device Verification Matrix
 
-Status: In Progress
+Status: Completed
 
 ## Problem
 
@@ -35,4 +35,9 @@ Crashlytics delivery with private local credentials.
 
 ## Verification
 
-- Pending implementation and bounded repository validation.
+- `sh -n scripts/check-baseline.sh` and the focused baseline checker passed.
+- `make check` passed from the repository and from an external working
+  directory, including Java snapshot and UTF-8 round-trip checks.
+- Twelve isolated hostile mutations of the checklist, guidance, and completed
+  plan contracts were rejected by `scripts/check-baseline.sh`.
+- No paired Android/Wear devices, Data Layer transport, physical crash, private Crashlytics project, or live report delivery was exercised; every external row remains `not run`.
