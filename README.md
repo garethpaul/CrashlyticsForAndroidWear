@@ -81,6 +81,11 @@ it is installed.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
+Use [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) to record exact-head
+paired phone/Wear and private Crashlytics evidence. Keep unavailable external
+scenarios as explicit unexecuted rows rather than treating static, Java, or
+Gradle checks as paired-device or hosted delivery execution.
+
 ## Configuration and Secrets
 
 - The committed Crashlytics API key is an all-zero placeholder that lets the

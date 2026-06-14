@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-14
+
+- Added an exact-head paired-device and Crashlytics verification matrix with
+  privacy-safe evidence fields and every external runtime row explicitly unexecuted.
+
 ## 2026-06-13
 
 - Redacted the Wear uncaught-exception receipt log while preserving crash report

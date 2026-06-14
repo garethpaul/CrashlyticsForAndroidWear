@@ -30,6 +30,7 @@ UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-13-dummy-message-utf8-wire-format.md"
 SNAPSHOT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-event-immutable-snapshots.md"
 UNCAUGHT_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md"
 MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
+DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-crashlytics-wear-device-verification.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -923,6 +924,55 @@ if ! grep -Fq "status: completed" "$REPORT_TYPE_PLAN"; then
   printf '%s\n' "Report type plan must be marked completed." >&2
   exit 1
 fi
+
+for required_device_path in "$ROOT_DIR/DEVICE_VERIFICATION.md" "$DEVICE_VERIFICATION_PLAN"; do
+  if [ ! -f "$required_device_path" ]; then
+    printf '%s\n' "Required Wear device verification file is missing: ${required_device_path#"$ROOT_DIR/"}" >&2
+    exit 1
+  fi
+done
+
+for device_contract in \
+  'commit SHA and pull request' \
+  'synthetic exceptions and dummy messages' \
+  'Paired node discovery' \
+  'UTF-8 dummy message' \
+  'Connection timeout' \
+  'Node lookup timeout' \
+  'Send timeout or failure' \
+  'Declared CRASH report' \
+  'Declared EXCEPTION report' \
+  'Unsupported report type' \
+  'Uncaught Wear exception' \
+  'Metadata privacy' \
+  'Live Crashlytics delivery' \
+  'Do not convert `not run` into passing evidence.' \
+  'API keys, project identifiers, device identifiers, full stack' \
+  'every phone, Wear, pairing, transport, crash, and Crashlytics row as unexecuted'; do
+  if ! grep -Fq "$device_contract" "$ROOT_DIR/DEVICE_VERIFICATION.md"; then
+    printf '%s\n' "Wear device checklist must keep contract: $device_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'DEVICE_VERIFICATION.md' "$README" || \
+   ! grep -Fq 'explicit unexecuted rows' "$README" || \
+   ! grep -Fq 'Crashlytics Wear device verification matrix' "$VISION" || \
+   ! grep -Fq 'every external runtime row explicitly unexecuted' "$CHANGES"; then
+  printf '%s\n' 'Repository guidance must document the unexecuted Wear device matrix.' >&2
+  exit 1
+fi
+
+for device_plan_contract in \
+  'Status: Completed' \
+  'make check' \
+  'hostile mutations' \
+  'No paired Android/Wear devices, Data Layer transport, physical crash, private Crashlytics project, or live report delivery was exercised'; do
+  if ! grep -Fq "$device_plan_contract" "$DEVICE_VERIFICATION_PLAN"; then
+    printf '%s\n' "Wear device plan must keep completion evidence: $device_plan_contract" >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq "Status: Completed" "$WEAR_REPORT_TYPE_PLAN"; then
   printf '%s\n' "Wear report type allowlist plan must be marked completed." >&2
