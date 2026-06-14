@@ -1,13 +1,13 @@
 ---
 title: Make Root Override Protection
 type: reliability
-status: in_progress
+status: completed
 date: 2026-06-14
 ---
 
 # Make Root Override Protection
 
-## Status: In Progress
+## Status: Completed
 
 ## Problem Frame
 
@@ -32,4 +32,20 @@ That redirects both repository scripts and SDK-backed Gradle commands.
 
 ## Verification
 
-Pending implementation and validation.
+- `sh -n scripts/check-baseline.sh`, `dash -n
+  scripts/check-baseline.sh`, and `sh -n scripts/test-wear-event-snapshots.sh`
+  passed.
+- All five Make gates passed through `make lint`, `make test`, `make tasks`,
+  `make build`, and `make check`.
+- Android lint reported zero issues for mobile and Wear, Gradle checks and task
+  discovery passed, and both debug APKs assembled with the configured SDK.
+- `make ROOT=/tmp check` passed and still used repository scripts and Gradle
+  project paths.
+- The full gate passed from `/tmp` through the absolute Makefile path, covering
+  the external working directory.
+- Four isolated hostile mutations were rejected: overrideable root, missing
+  plan, reopened plan, and missing verification evidence.
+- `git diff --check`, intended-path review, artifact inspection, and the
+  changed-line secret scan passed.
+- No paired-device crash delivery or live Crashlytics/Fabric credential flow
+  was exercised.

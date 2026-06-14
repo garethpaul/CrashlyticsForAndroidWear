@@ -1,6 +1,6 @@
 .PHONY: build check lint tasks test verify
 
-ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 ANDROID_HOME ?= /home/gjones/android-sdk
 GRADLE ?= $(ROOT)gradlew
 

@@ -29,6 +29,7 @@ WEAR_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-data-layer-send-timeouts
 UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-13-dummy-message-utf8-wire-format.md"
 SNAPSHOT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-event-immutable-snapshots.md"
 UNCAUGHT_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md"
+MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -106,6 +107,7 @@ for path in \
   "docs/plans/2026-06-13-dummy-message-utf8-wire-format.md" \
   "docs/plans/2026-06-13-wear-event-immutable-snapshots.md" \
   "docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md" \
+  "docs/plans/2026-06-14-make-root-override-protection.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -804,9 +806,19 @@ if ! grep -Fq 'group: check-${{ github.workflow }}-${{ github.ref }}' "$CI_WORKF
   exit 1
 fi
 
-if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE" ||
+if ! grep -Fq 'override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE" ||
   [ "$(grep -c -- '--project-dir "$(ROOT)"' "$MAKEFILE")" -ne 4 ]; then
-  printf '%s\n' "Make targets must resolve Gradle and its project directory from the repository root." >&2
+  printf '%s\n' "Make targets must protect and resolve Gradle and its project directory from the repository root." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "## Status: Completed" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq 'make ROOT=/tmp check' "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "five Make gates" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "external working directory" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "Four isolated hostile mutations were rejected" "$MAKE_ROOT_PROTECTION_PLAN"; then
+  printf '%s\n' "Make root protection plan must record completed hostile-override and external verification." >&2
   exit 1
 fi
 
