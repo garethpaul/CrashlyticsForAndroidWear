@@ -35,6 +35,7 @@ Priority:
 - Guard Wear Data Layer send results before reading status details
 - Bound Wear Data Layer connection, discovery, and send waits
 - Keep dummy Wear-to-mobile text messages on an explicit UTF-8 wire format
+- Keep dummy Wear receipt logs free of message payload content
 - Keep mobile and wear app-data backup disabled by default
 - Avoid committing Fabric or Crashlytics credentials
 - Keep the SDK-free `make check` baseline running in GitHub Actions

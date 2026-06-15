@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-15
+
+- Removed decoded dummy Wear message payloads from mobile Logcat receipt diagnostics
+  while preserving explicit UTF-8 decoding and path-level error handling.
+
 ## 2026-06-14
 
 - Added an exact-head paired-device and Crashlytics verification matrix with

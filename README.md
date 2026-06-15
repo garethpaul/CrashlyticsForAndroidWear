@@ -149,6 +149,8 @@ Gradle checks as paired-device or hosted delivery execution.
   to five seconds so stalled paired-device operations cannot hold a service indefinitely.
 - Dummy text messages use UTF-8 on both Wear and mobile endpoints so
   non-ASCII payloads do not depend on either device's default charset.
+- Dummy message receipt logs omit decoded payload content while retaining a
+  constant delivery diagnostic on the paired mobile device.
 - Mobile and wear app-data backup is disabled by default for the crash
   forwarding sample.
 - Mobile and wear lint keep only the old missing API database runner error and
@@ -181,6 +183,8 @@ Gradle checks as paired-device or hosted delivery execution.
   Actions baseline.
 - See `docs/plans/2026-06-10-crash-metadata-privacy-boundary.md` for the
   Crashlytics metadata allowlist and hardware identifier privacy boundary.
+- See `docs/plans/2026-06-15-dummy-message-payload-log-redaction.md` for the
+  dummy-message Logcat privacy boundary.
 
 ## Contributing
 

@@ -42,8 +42,8 @@ public class DummyWearableListenerReceiver extends WearableListenerReceiver {
                 Log.e(MYLOGGER, "Ignoring dummy message without payload");
                 return;
             }
-            String message = new String(messageData, UTF_8);
-            Log.d(MYLOGGER, "message received, path="+messageEvent.getPath() + ", message="+ message);
+            String decodedMessage = new String(messageData, UTF_8);
+            Log.d(MYLOGGER, "Dummy message received");
         }
         else {
             Log.d(MYLOGGER, "unknown path:"+ messageEvent.getPath());

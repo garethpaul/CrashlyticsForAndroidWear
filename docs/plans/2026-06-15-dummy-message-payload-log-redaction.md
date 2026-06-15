@@ -1,13 +1,13 @@
 ---
 title: Dummy Message Payload Log Redaction
 type: security
-status: planned
+status: completed
 date: 2026-06-15
 ---
 
 # Dummy Message Payload Log Redaction
 
-## Status: Planned
+## Status: Completed
 
 ## Problem Frame
 
@@ -57,3 +57,25 @@ that content into device logs.
 - The decoded local variable remains necessary to prove the existing UTF-8
   wire-format contract unless implementation shows it can be removed without
   weakening that contract.
+
+## Work Completed
+
+- Replaced the payload-bearing mobile receipt log with a constant diagnostic.
+- Preserved path and empty-payload guards, explicit UTF-8 decoding, and unknown
+  path delegation.
+- Added source, documentation, and completed-plan contracts to the SDK-free
+  baseline.
+
+## Verification Completed
+
+- `sh -n scripts/check-baseline.sh` and `git diff --check` passed.
+- The focused baseline passed every source, documentation, and executable UTF-8
+  check before stopping at the intentionally incomplete plan-status gate.
+- Six hostile mutations were rejected for payload-log restoration, receipt-log
+  deletion, UTF-8 drift, documentation drift, stale plan status, and missing
+  mutation evidence.
+- Repository-root `make check` and absolute-path `make check` from `/tmp`
+  passed the SDK-free baseline, immutable snapshot test, Android lint and check
+  tasks, task discovery, and mobile/wear debug APK assembly.
+- Paired-device message delivery was not exercised; protocol payloads,
+  manifests, dependencies, credentials, and workflows are unchanged.

@@ -55,6 +55,7 @@
 - Wear crash forwarding sends stack traces as text, package-scopes internal broadcasts, and disconnects GoogleApiClient clients after message sends.
 - Wear uncaught-exception receipt logs must never include the Throwable; preserve report forwarding and previous-handler delegation.
 - Wear message and node wrappers are immutable snapshots; message payload arrays are defensively copied on capture and access.
+- Dummy Wear receipt logs must never include decoded or raw message payloads; retain only constant diagnostics.
 
 ## Agent workflow
 

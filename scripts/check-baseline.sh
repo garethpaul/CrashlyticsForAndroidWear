@@ -31,6 +31,7 @@ SNAPSHOT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-event-immutable-snapshots.md
 UNCAUGHT_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md"
 MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-crashlytics-wear-device-verification.md"
+DUMMY_PAYLOAD_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-dummy-message-payload-log-redaction.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -109,6 +110,7 @@ for path in \
   "docs/plans/2026-06-13-wear-event-immutable-snapshots.md" \
   "docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md" \
   "docs/plans/2026-06-14-make-root-override-protection.md" \
+  "docs/plans/2026-06-15-dummy-message-payload-log-redaction.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -604,6 +606,22 @@ if ! grep -Fq 'message.getBytes(UTF_8)' "$DUMMY_SERVICE" ||
   exit 1
 fi
 
+if ! grep -Fq 'Log.d(MYLOGGER, "Dummy message received");' "$DUMMY_RECEIVER" ||
+  grep -Eq 'Log\.[^;]*(messageData|decodedMessage)' "$DUMMY_RECEIVER" ||
+  grep -Eq 'Log\.[^;]*\+[[:space:]]*message([[:space:]]*[),;]|[[:space:]]*\+)' "$DUMMY_RECEIVER"; then
+  printf '%s\n' "Dummy message receipt logs must not expose decoded or raw payload content." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Dummy message receipt logs omit decoded payload content' "$README" ||
+  ! grep -Fq 'Dummy Wear message receipt logs must not include decoded or raw payload content' "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq 'Keep dummy Wear receipt logs free of message payload content' "$VISION" ||
+  ! grep -Fq 'Removed decoded dummy Wear message payloads from mobile Logcat receipt diagnostics' "$CHANGES" ||
+  ! grep -Fq 'Dummy Wear receipt logs must never include decoded or raw message payloads' "$ROOT_DIR/AGENTS.md"; then
+  printf '%s\n' "Dummy message payload log redaction must remain documented." >&2
+  exit 1
+fi
+
 for command_name in java javac; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     printf '%s\n' "Executable UTF-8 verification requires $command_name on PATH." >&2
@@ -1081,6 +1099,17 @@ if ! grep -Fq "status: completed" "$UTF8_PLAN" ||
   ! grep -Fq 'make -f /absolute/path/Makefile check' "$UTF8_PLAN" ||
   ! grep -Fq "Paired-device behavior was not exercised" "$UTF8_PLAN"; then
   printf '%s\n' "Dummy-message UTF-8 plan must record completed local verification and its paired-device limit." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$DUMMY_PAYLOAD_LOG_PLAN" ||
+  ! grep -Fq "## Status: Completed" "$DUMMY_PAYLOAD_LOG_PLAN" ||
+  ! grep -Fq "## Work Completed" "$DUMMY_PAYLOAD_LOG_PLAN" ||
+  ! grep -Fq "## Verification Completed" "$DUMMY_PAYLOAD_LOG_PLAN" ||
+  ! grep -Fq "make check" "$DUMMY_PAYLOAD_LOG_PLAN" ||
+  ! grep -Fq "hostile mutations were rejected" "$DUMMY_PAYLOAD_LOG_PLAN" ||
+  ! grep -Fq "Paired-device message delivery was not exercised" "$DUMMY_PAYLOAD_LOG_PLAN"; then
+  printf '%s\n' "Dummy message payload log redaction plan must record completed status and verification." >&2
   exit 1
 fi
 
