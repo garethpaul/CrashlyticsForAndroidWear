@@ -2,6 +2,7 @@
 
 ## 2026-06-15
 
+- Redacted paired-device names and raw provider status messages from Wear send outcome logs.
 - Removed decoded dummy Wear message payloads from mobile Logcat receipt diagnostics
   while preserving explicit UTF-8 decoding and path-level error handling.
 

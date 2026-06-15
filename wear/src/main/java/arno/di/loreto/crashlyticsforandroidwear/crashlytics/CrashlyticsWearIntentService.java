@@ -242,14 +242,14 @@ public class CrashlyticsWearIntentService extends IntentService {
                         mApiClient, node.getId(), path, dataMap.toByteArray())
                         .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                 if (result == null || result.getStatus() == null) {
-                    Log.e(MYLOGGER, "Crashlytics send finished without status, Node:" + node.getDisplayName());
+                    Log.e(MYLOGGER, "Crashlytics send finished without status");
                     continue;
                 }
                 if(result.getStatus().isSuccess()) {
-                    Log.d(MYLOGGER, "Message sent on node:"+node.getDisplayName());
+                    Log.d(MYLOGGER, "Crashlytics report sent");
                 }
                 else{
-                    Log.e(MYLOGGER, "Sending message failed: " + result.getStatus().getStatusMessage() + ", Node:" + node.getDisplayName());
+                    Log.e(MYLOGGER, "Crashlytics report send failed");
                 }
             }
         }

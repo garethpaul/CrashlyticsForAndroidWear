@@ -32,6 +32,7 @@ UNCAUGHT_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-uncaught-throwable-log-r
 MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-crashlytics-wear-device-verification.md"
 DUMMY_PAYLOAD_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-dummy-message-payload-log-redaction.md"
+SEND_OUTCOME_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-wear-send-outcome-log-redaction.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -651,6 +652,47 @@ fi
 if ! grep -Fq "result == null || result.getStatus() == null" "$DUMMY_SERVICE" ||
   ! grep -Fq "Dummy message send finished without status" "$DUMMY_SERVICE"; then
   printf '%s\n' "Dummy message sender must guard missing send results and statuses." >&2
+  exit 1
+fi
+
+for sender in "$WEAR_SERVICE" "$DUMMY_SERVICE"; do
+  if grep -Eq 'Log\.[^;]*(getDisplayName|getStatusMessage)\(' "$sender"; then
+    printf '%s\n' "Wear send outcome logs must not expose device names or raw status messages: ${sender#"$ROOT_DIR/"}" >&2
+    exit 1
+  fi
+done
+
+for send_outcome_contract in \
+  "$WEAR_SERVICE|Crashlytics send finished without status" \
+  "$WEAR_SERVICE|Crashlytics report sent" \
+  "$WEAR_SERVICE|Crashlytics report send failed" \
+  "$DUMMY_SERVICE|Dummy message send finished without status" \
+  "$DUMMY_SERVICE|Dummy message sent" \
+  "$DUMMY_SERVICE|Dummy message send failed"; do
+  sender=${send_outcome_contract%%|*}
+  message=${send_outcome_contract#*|}
+  if ! grep -Fq "\"$message\"" "$sender"; then
+    printf '%s\n' "Wear sender must retain category diagnostic: $message" >&2
+    exit 1
+  fi
+done
+
+if [ ! -f "$SEND_OUTCOME_LOG_PLAN" ] || \
+  ! grep -Fq "status: completed" "$SEND_OUTCOME_LOG_PLAN" || \
+  ! grep -Fq "## Status: Completed" "$SEND_OUTCOME_LOG_PLAN" || \
+  ! grep -Fq "make check" "$SEND_OUTCOME_LOG_PLAN" || \
+  ! grep -Fq "hostile mutations were rejected" "$SEND_OUTCOME_LOG_PLAN" || \
+  ! grep -Fq "Paired-device delivery and live Logcat observation were not exercised" "$SEND_OUTCOME_LOG_PLAN"; then
+  printf '%s\n' "Wear send outcome log redaction plan must record completed verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Wear send outcome logs omit paired-device names and raw provider status messages" "$README" || \
+  ! grep -Fq "Wear send diagnostics must not expose paired-device display names or raw provider status messages" "$ROOT_DIR/SECURITY.md" || \
+  ! grep -Fq "Keep Wear send outcome logs limited to constant categories" "$ROOT_DIR/VISION.md" || \
+  ! grep -Fq "Redacted paired-device names and raw provider status messages from Wear send outcome logs" "$ROOT_DIR/CHANGES.md" || \
+  ! grep -Fq "Keep Wear send outcome logs free of paired-device names and raw provider status messages" "$ROOT_DIR/AGENTS.md"; then
+  printf '%s\n' "Repository guidance must document Wear send outcome log redaction." >&2
   exit 1
 fi
 

@@ -1,13 +1,13 @@
 ---
 title: Wear Send Outcome Log Redaction
 type: security
-status: planned
+status: completed
 date: 2026-06-15
 ---
 
 # Wear Send Outcome Log Redaction
 
-## Status: Planned
+## Status: Completed
 
 ## Problem Frame
 
@@ -57,3 +57,22 @@ diagnostics and may contain user-assigned device names or provider details.
 - Paired-device delivery and live Logcat observation remain outside local
   validation.
 - Category-only logs provide less per-device troubleshooting detail by design.
+
+## Work Completed
+
+- Replaced paired-device display names and raw provider status messages with
+  constant missing-status, success, and failure diagnostics in both senders.
+- Preserved bounded connection, discovery, and send waits plus existing
+  result/status and node-id validation.
+- Added source, documentation, and completed-plan contracts to the SDK-free
+  baseline.
+
+## Verification Completed
+
+- `sh -n scripts/check-baseline.sh` and focused source contracts passed.
+- Six hostile mutations were rejected for device-name logging, raw status
+  logging, category deletion, documentation drift, and stale plan evidence.
+- Repository-root and external-directory `make check` passed the SDK-free
+  baseline, executable Java checks, Android lint/check tasks, and mobile/wear
+  debug APK assembly.
+- Paired-device delivery and live Logcat observation were not exercised.

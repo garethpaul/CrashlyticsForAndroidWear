@@ -56,6 +56,7 @@
 - Wear uncaught-exception receipt logs must never include the Throwable; preserve report forwarding and previous-handler delegation.
 - Wear message and node wrappers are immutable snapshots; message payload arrays are defensively copied on capture and access.
 - Dummy Wear receipt logs must never include decoded or raw message payloads; retain only constant diagnostics.
+- Keep Wear send outcome logs free of paired-device names and raw provider status messages.
 
 ## Agent workflow
 
