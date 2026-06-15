@@ -1,6 +1,6 @@
 ---
 title: Crashlytics Message Path Log Redaction
-status: planned
+status: completed
 date: 2026-06-15
 ---
 
@@ -78,9 +78,33 @@ expression, preserve fallback dispatch, and record completed evidence.
 - Do not remove path access used for routing.
 - Do not claim paired-device delivery or live Logcat observation.
 
-## Verification To Record
+## Status: Completed
 
-- Pre-fix focused failure and post-fix source contract.
-- Root and external full gates.
-- Hostile source, guidance, and completed-plan mutation rejection.
-- Final diff, artifact, secret-pattern, and exact-head evidence.
+## Work Completed
+
+- Replaced the value-bearing unknown-path Logcat expression with the constant
+  `Unknown crashlytics message path` category.
+- Preserved `/crashlytics` routing, payload handling, and parent fallback for
+  unknown paths.
+- Added logging-expression, completed-plan, and synchronized privacy-guidance
+  contracts to `scripts/check-baseline.sh`.
+
+## Verification Completed
+
+- The focused pre-fix check reproduced the raw `messageEvent.getPath()` logging
+  expression before the source change.
+- The post-fix source contract passed while retaining path access for routing and
+  parent fallback handling.
+- `sh -n scripts/check-baseline.sh` passed.
+- Five isolated hostile mutations were rejected for raw path restoration,
+  constant-category removal, parent fallback removal, guidance weakening, and
+  planned-status rollback.
+- Repository-root `make check` passed the SDK-free baseline, UTF-8 round trip,
+  immutable event snapshot check, Gradle check/task discovery, zero-finding
+  mobile and wear lint, and both debug APK assemblies.
+- The same complete gate passed from `/tmp` through the absolute Makefile path.
+- Explicit `.gradle`, root `build`, `mobile/build`, and `wear/build` outputs were
+  removed with existence checks after validation.
+- Final audits and hosted exact-head state are recorded by the shipping evidence
+  for this branch.
+- Paired-device delivery and live Logcat observation were not exercised.

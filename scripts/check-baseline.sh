@@ -34,6 +34,7 @@ DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-crashlytics-wear-devic
 DUMMY_PAYLOAD_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-dummy-message-payload-log-redaction.md"
 SEND_OUTCOME_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-wear-send-outcome-log-redaction.md"
 DUMMY_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-dummy-message-path-log-redaction.md"
+CRASHLYTICS_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-crashlytics-message-path-log-redaction.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -628,6 +629,32 @@ fi
 if ! grep -Fq 'Log.d(MYLOGGER, "Unknown dummy message path");' "$DUMMY_RECEIVER" ||
   grep -Eq 'Log\.[^;]*getPath\(' "$DUMMY_RECEIVER"; then
   printf '%s\n' "Dummy message path logs must not expose peer-controlled path values." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Log.d(MYLOGGER, "Unknown crashlytics message path");' "$MOBILE_RECEIVER" ||
+  grep -Eq 'Log\.[^;]*getPath\(' "$MOBILE_RECEIVER" ||
+  ! grep -Fq 'super.onMessageReceived(context, messageEvent);' "$MOBILE_RECEIVER"; then
+  printf '%s\n' "Crashlytics message path logs must not expose peer-controlled path values." >&2
+  exit 1
+fi
+
+if [ ! -f "$CRASHLYTICS_PATH_LOG_PLAN" ] || \
+  ! grep -Fq "status: completed" "$CRASHLYTICS_PATH_LOG_PLAN" || \
+  ! grep -Fq "## Status: Completed" "$CRASHLYTICS_PATH_LOG_PLAN" || \
+  ! grep -Fq "make check" "$CRASHLYTICS_PATH_LOG_PLAN" || \
+  ! grep -Fq "hostile mutations were rejected" "$CRASHLYTICS_PATH_LOG_PLAN" || \
+  ! grep -Fq "Paired-device delivery and live Logcat observation were not exercised" "$CRASHLYTICS_PATH_LOG_PLAN"; then
+  printf '%s\n' "Crashlytics message path log redaction plan must record completed verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Crashlytics message path diagnostics omit peer-controlled path values" "$README" || \
+  ! grep -Fq "Crashlytics Wear message path diagnostics must not include peer-controlled path values" "$ROOT_DIR/SECURITY.md" || \
+  ! grep -Fq "Keep Crashlytics Wear path diagnostics free of peer-controlled path values" "$VISION" || \
+  ! grep -Fq "Redacted peer-controlled paths from Crashlytics Wear message diagnostics" "$CHANGES" || \
+  ! grep -Fq "Crashlytics Wear path diagnostics must never include peer-controlled path values" "$ROOT_DIR/AGENTS.md"; then
+  printf '%s\n' "Crashlytics message path log redaction must remain documented." >&2
   exit 1
 fi
 

@@ -64,7 +64,7 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
             }
         }
         else {
-            Log.d(MYLOGGER, "unknown path:"+ messageEvent.getPath());
+            Log.d(MYLOGGER, "Unknown crashlytics message path");
             super.onMessageReceived(context, messageEvent);
         }
     }
