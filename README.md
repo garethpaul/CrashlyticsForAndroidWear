@@ -151,6 +151,8 @@ Gradle checks as paired-device or hosted delivery execution.
   non-ASCII payloads do not depend on either device's default charset.
 - Dummy message receipt logs omit decoded payload content while retaining a
   constant delivery diagnostic on the paired mobile device.
+- Dummy message path diagnostics omit peer-controlled path values while
+  retaining a constant unknown-path category and parent fallback handling.
 - Wear send outcome logs omit paired-device names and raw provider status messages
   while retaining constant missing-status, success, and failure diagnostics.
 - Mobile and wear app-data backup is disabled by default for the crash

@@ -1,6 +1,6 @@
 ---
 title: Dummy Message Path Log Redaction
-status: in_progress
+status: completed
 date: 2026-06-15
 ---
 
@@ -40,6 +40,22 @@ parent, so diagnostics do not need the path value to preserve behavior.
   weakening guidance, or falsifying plan completion evidence
 - Exact diff, generated-artifact, conflict-marker, whitespace, and credential scans
 
-## Status: In Progress
+## Status: Completed
 
-Implementation and verification evidence will be recorded after the gates complete.
+## Work Completed
+
+- Replaced the value-bearing unknown-path Logcat expression with the constant
+  `Unknown dummy message path` category.
+- Preserved `/dummy` routing and parent fallback handling for unknown paths.
+- Added source, completed-plan, and synchronized privacy-guidance contracts to
+  `scripts/check-baseline.sh`.
+
+## Verification Completed
+
+- `sh -n scripts/check-baseline.sh` passed.
+- The focused source contract passed and preserved parent fallback handling.
+- SDK-backed immutable snapshot tests, Gradle `check`, task discovery, mobile/wear
+  lint with zero issues, and both debug APK assemblies passed.
+- The clean static-check fixture passed and seven isolated hostile mutations were rejected.
+- Repository-root and external-directory `make check` both passed.
+- Paired-device delivery and live Logcat observation were not exercised.

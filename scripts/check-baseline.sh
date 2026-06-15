@@ -33,6 +33,7 @@ MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-pr
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-crashlytics-wear-device-verification.md"
 DUMMY_PAYLOAD_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-dummy-message-payload-log-redaction.md"
 SEND_OUTCOME_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-wear-send-outcome-log-redaction.md"
+DUMMY_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-dummy-message-path-log-redaction.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -112,6 +113,7 @@ for path in \
   "docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md" \
   "docs/plans/2026-06-14-make-root-override-protection.md" \
   "docs/plans/2026-06-15-dummy-message-payload-log-redaction.md" \
+  "docs/plans/2026-06-15-dummy-message-path-log-redaction.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -620,6 +622,31 @@ if ! grep -Fq 'Dummy message receipt logs omit decoded payload content' "$README
   ! grep -Fq 'Removed decoded dummy Wear message payloads from mobile Logcat receipt diagnostics' "$CHANGES" ||
   ! grep -Fq 'Dummy Wear receipt logs must never include decoded or raw message payloads' "$ROOT_DIR/AGENTS.md"; then
   printf '%s\n' "Dummy message payload log redaction must remain documented." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Log.d(MYLOGGER, "Unknown dummy message path");' "$DUMMY_RECEIVER" ||
+  grep -Eq 'Log\.[^;]*getPath\(' "$DUMMY_RECEIVER"; then
+  printf '%s\n' "Dummy message path logs must not expose peer-controlled path values." >&2
+  exit 1
+fi
+
+if [ ! -f "$DUMMY_PATH_LOG_PLAN" ] || \
+  ! grep -Fq "status: completed" "$DUMMY_PATH_LOG_PLAN" || \
+  ! grep -Fq "## Status: Completed" "$DUMMY_PATH_LOG_PLAN" || \
+  ! grep -Fq "make check" "$DUMMY_PATH_LOG_PLAN" || \
+  ! grep -Fq "hostile mutations were rejected" "$DUMMY_PATH_LOG_PLAN" || \
+  ! grep -Fq "Paired-device delivery and live Logcat observation were not exercised" "$DUMMY_PATH_LOG_PLAN"; then
+  printf '%s\n' "Dummy message path log redaction plan must record completed verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Dummy message path diagnostics omit peer-controlled path values" "$README" || \
+  ! grep -Fq "Dummy Wear message path diagnostics must not include peer-controlled path values" "$ROOT_DIR/SECURITY.md" || \
+  ! grep -Fq "Keep dummy Wear path diagnostics free of peer-controlled path values" "$VISION" || \
+  ! grep -Fq "Redacted peer-controlled paths from dummy Wear message diagnostics" "$CHANGES" || \
+  ! grep -Fq "Dummy Wear path diagnostics must never include peer-controlled path values" "$ROOT_DIR/AGENTS.md"; then
+  printf '%s\n' "Dummy message path log redaction must remain documented." >&2
   exit 1
 fi
 

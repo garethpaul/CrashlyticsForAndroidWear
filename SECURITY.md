@@ -41,6 +41,8 @@ Helpful reports include:
   the report payload and previous default handler retain the original throwable.
 - Dummy Wear message receipt logs must not include decoded or raw payload content;
   retain only constant delivery diagnostics.
+- Dummy Wear message path diagnostics must not include peer-controlled path values;
+  retain only a constant category before parent fallback handling.
 - Wear send diagnostics must not expose paired-device display names or raw provider status messages;
   retain only constant outcome categories.
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.

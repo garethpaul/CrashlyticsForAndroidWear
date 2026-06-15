@@ -46,7 +46,7 @@ public class DummyWearableListenerReceiver extends WearableListenerReceiver {
             Log.d(MYLOGGER, "Dummy message received");
         }
         else {
-            Log.d(MYLOGGER, "unknown path:"+ messageEvent.getPath());
+            Log.d(MYLOGGER, "Unknown dummy message path");
             super.onMessageReceived(context, messageEvent);
         }
     }

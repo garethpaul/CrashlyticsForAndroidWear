@@ -36,6 +36,7 @@ Priority:
 - Bound Wear Data Layer connection, discovery, and send waits
 - Keep dummy Wear-to-mobile text messages on an explicit UTF-8 wire format
 - Keep dummy Wear receipt logs free of message payload content
+- Keep dummy Wear path diagnostics free of peer-controlled path values
 - Keep Wear send outcome logs limited to constant categories without device names or provider details
 - Keep mobile and wear app-data backup disabled by default
 - Avoid committing Fabric or Crashlytics credentials
