@@ -1,6 +1,6 @@
 # Peer Display Name Log Redaction
 
-## Status: In Progress
+## Status: Completed
 
 ## Context
 
@@ -45,3 +45,15 @@ The value is still required in the package-scoped event broadcast.
 
 - Peer identifier storage, broadcast schema changes, Wear transport behavior,
   dependency/toolchain upgrades, and workflow changes.
+
+## Verification Results
+
+- `sh -n scripts/check-baseline.sh` and the focused portable baseline passed.
+- Four isolated peer-log mutations were rejected: restored display-name
+  interpolation, removed display-name routing extra, removed maintained
+  guidance, and reopened plan status.
+- Repository-root and external-directory `make check` passed the source
+  contracts, fixtures, zero-finding Android lint, Gradle checks, and debug APK
+  assemblies.
+- No emulator, physical wearable, paired transport, or live peer callback was
+  executed; runtime and Logcat verification remain in the device matrix.

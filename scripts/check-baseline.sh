@@ -37,6 +37,7 @@ DUMMY_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-dummy-message-path-log-reda
 CRASHLYTICS_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-crashlytics-message-path-log-redaction.md"
 MALFORMED_PAYLOAD_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-crashlytics-malformed-payload-log-redaction.md"
 BROADCASTER_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-broadcaster-message-path-log-redaction.md"
+PEER_DISPLAY_NAME_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-peer-display-name-log-redaction.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -118,6 +119,7 @@ for path in \
   "docs/plans/2026-06-15-dummy-message-payload-log-redaction.md" \
   "docs/plans/2026-06-15-dummy-message-path-log-redaction.md" \
   "docs/plans/2026-06-16-crashlytics-malformed-payload-log-redaction.md" \
+  "docs/plans/2026-06-16-peer-display-name-log-redaction.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -503,6 +505,36 @@ fi
 
 if [ "$(grep -Fc 'intent.putExtra(EXTRA_DATA_PATH, messageEvent.getPath());' "$WEARABLE_BROADCASTER")" -ne 1 ]; then
   printf '%s\n' "Wear message broadcaster routing must retain the copied path extra." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc 'Log.d(MYLOGGER, "Wear peer disconnected");' "$WEARABLE_BROADCASTER")" -ne 1 ] || \
+  [ "$(grep -Fc 'Log.d(MYLOGGER, "Wear peer connected");' "$WEARABLE_BROADCASTER")" -ne 1 ] || \
+  grep -Eq 'Log\.[^;]*peer\.getDisplayName\(' "$WEARABLE_BROADCASTER"; then
+  printf '%s\n' "Wear peer diagnostics must not disclose paired-device display names." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc 'intent.putExtra(EXTRA_NODE_DISPLAY_NAME, peer.getDisplayName());' "$WEARABLE_BROADCASTER")" -ne 2 ] || \
+  [ "$(grep -Fc 'intent.putExtra(EXTRA_NODE_ID, peer.getId());' "$WEARABLE_BROADCASTER")" -ne 2 ]; then
+  printf '%s\n' "Wear peer broadcasts must retain display-name and node-ID routing extras." >&2
+  exit 1
+fi
+
+peer_display_name_guidance="Wear peer connection diagnostics omit paired-device display names while preserving package-scoped node extras."
+for guidance_file in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$peer_display_name_guidance" "$ROOT_DIR/$guidance_file"; then
+    printf '%s\n' "Wear peer display-name redaction guidance must remain checked in: $guidance_file" >&2
+    exit 1
+  fi
+done
+
+if [ ! -f "$PEER_DISPLAY_NAME_LOG_PLAN" ] || \
+  ! grep -Fq "Status: Completed" "$PEER_DISPLAY_NAME_LOG_PLAN" || \
+  ! grep -Fq "make check" "$PEER_DISPLAY_NAME_LOG_PLAN" || \
+  ! grep -Fq "isolated peer-log mutations were rejected" "$PEER_DISPLAY_NAME_LOG_PLAN" || \
+  ! grep -Fq "No emulator, physical wearable, paired transport, or live peer callback" "$PEER_DISPLAY_NAME_LOG_PLAN"; then
+  printf '%s\n' "Wear peer display-name redaction plan must record completed verification." >&2
   exit 1
 fi
 

@@ -18,6 +18,7 @@ The current focus is:
 Priority:
 
 - The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing.
+- Wear peer connection diagnostics omit paired-device display names while preserving package-scoped node extras.
 - Preserve the uncaught-exception-to-wear-message flow
 - Keep Crashlytics handling separated from other wearable messages
 - Keep Wear report types constrained to declared crash/exception values

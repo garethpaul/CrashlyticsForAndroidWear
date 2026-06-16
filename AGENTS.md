@@ -60,6 +60,7 @@
 - Crashlytics Wear path diagnostics must never include peer-controlled path values; preserve parent fallback handling.
 - Malformed Crashlytics payload diagnostics must never include parser exception details; preserve constant rejection logging.
 - The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing.
+- Wear peer connection diagnostics omit paired-device display names while preserving package-scoped node extras.
 - Keep Wear send outcome logs free of paired-device names and raw provider status messages.
 
 ## Agent workflow

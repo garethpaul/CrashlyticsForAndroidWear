@@ -56,7 +56,7 @@ public class WearableListenerBroadcaster extends WearableListenerService {
             Log.e(MYLOGGER, "Ignoring disconnected peer without node data");
             return;
         }
-        Log.d(MYLOGGER, "onPeerDisconnected "+ peer.getDisplayName());
+        Log.d(MYLOGGER, "Wear peer disconnected");
         Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_NODE_DISPLAY_NAME, peer.getDisplayName());
         intent.putExtra(EXTRA_NODE_ID, peer.getId());
@@ -75,7 +75,7 @@ public class WearableListenerBroadcaster extends WearableListenerService {
             Log.e(MYLOGGER, "Ignoring connected peer without node data");
             return;
         }
-        Log.d(MYLOGGER, "onPeerConnected "+ peer.getDisplayName());
+        Log.d(MYLOGGER, "Wear peer connected");
         Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_NODE_DISPLAY_NAME, peer.getDisplayName());
         intent.putExtra(EXTRA_NODE_ID, peer.getId());
