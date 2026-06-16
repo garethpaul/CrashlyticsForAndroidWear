@@ -38,6 +38,7 @@ CRASHLYTICS_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-crashlytics-message-p
 MALFORMED_PAYLOAD_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-crashlytics-malformed-payload-log-redaction.md"
 BROADCASTER_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-broadcaster-message-path-log-redaction.md"
 PEER_DISPLAY_NAME_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-peer-display-name-log-redaction.md"
+DATA_EVENT_STATUS_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-data-event-status-log-redaction.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -535,6 +536,43 @@ if [ ! -f "$PEER_DISPLAY_NAME_LOG_PLAN" ] || \
   ! grep -Fq "isolated peer-log mutations were rejected" "$PEER_DISPLAY_NAME_LOG_PLAN" || \
   ! grep -Fq "No emulator, physical wearable, paired transport, or live peer callback" "$PEER_DISPLAY_NAME_LOG_PLAN"; then
   printf '%s\n' "Wear peer display-name redaction plan must record completed verification." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc 'dataEvents == null || dataEvents.getStatus() == null' "$WEARABLE_BROADCASTER")" -ne 1 ] || \
+  [ "$(grep -Fc 'Log.d(MYLOGGER, "Wear data change received");' "$WEARABLE_BROADCASTER")" -ne 1 ] || \
+  [ "$(grep -Fc 'super.onDataChanged(dataEvents);' "$WEARABLE_BROADCASTER")" -ne 1 ] || \
+  [ "$(grep -Fc 'releaseDataEvents(dataEvents);' "$WEARABLE_BROADCASTER")" -ne 1 ] || \
+  grep -Fq "getStatusMessage()" "$WEARABLE_BROADCASTER"; then
+  printf '%s\n' "Wear data-event diagnostics must not disclose raw provider status messages." >&2
+  exit 1
+fi
+
+data_status_guard_line=$(grep -nF 'dataEvents == null || dataEvents.getStatus() == null' "$WEARABLE_BROADCASTER" | cut -d: -f1)
+data_status_log_line=$(grep -nF 'Log.d(MYLOGGER, "Wear data change received");' "$WEARABLE_BROADCASTER" | cut -d: -f1)
+data_status_super_line=$(grep -nF 'super.onDataChanged(dataEvents);' "$WEARABLE_BROADCASTER" | cut -d: -f1)
+data_status_release_line=$(grep -nF 'releaseDataEvents(dataEvents);' "$WEARABLE_BROADCASTER" | cut -d: -f1)
+if [ "$data_status_guard_line" -ge "$data_status_log_line" ] || \
+  [ "$data_status_log_line" -ge "$data_status_super_line" ] || \
+  [ "$data_status_super_line" -ge "$data_status_release_line" ]; then
+  printf '%s\n' "Wear data-event validation, logging, callback, and release ordering must remain fail-safe." >&2
+  exit 1
+fi
+
+data_event_status_guidance="Wear data-event diagnostics omit raw provider status messages while preserving status guards and buffer release."
+for guidance_file in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$data_event_status_guidance" "$ROOT_DIR/$guidance_file"; then
+    printf '%s\n' "Wear data-event status redaction guidance must remain checked in: $guidance_file" >&2
+    exit 1
+  fi
+done
+
+if [ ! -f "$DATA_EVENT_STATUS_LOG_PLAN" ] || \
+  ! grep -Fq "Status: Completed" "$DATA_EVENT_STATUS_LOG_PLAN" || \
+  ! grep -Fq "make check" "$DATA_EVENT_STATUS_LOG_PLAN" || \
+  ! grep -Fq "isolated data-status mutations were rejected" "$DATA_EVENT_STATUS_LOG_PLAN" || \
+  ! grep -Fq "No emulator, physical wearable, paired transport, or live data-event callback" "$DATA_EVENT_STATUS_LOG_PLAN"; then
+  printf '%s\n' "Wear data-event status redaction plan must record completed verification." >&2
   exit 1
 fi
 

@@ -96,6 +96,7 @@ Gradle checks as paired-device or hosted delivery execution.
 ## Security and Privacy Notes
 
 The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing.
+Wear data-event diagnostics omit raw provider status messages while preserving status guards and buffer release.
 Wear peer connection diagnostics omit paired-device display names while preserving package-scoped node extras.
 
 - Both launcher activities and the Google Play services Wear listener declare

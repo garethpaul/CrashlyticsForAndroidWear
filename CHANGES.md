@@ -2,6 +2,7 @@
 
 ## 2026-06-16
 
+- Wear data-event diagnostics omit raw provider status messages while preserving status guards and buffer release.
 - The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing.
 - Wear peer connection diagnostics omit paired-device display names while preserving package-scoped node extras.
 - Redacted parser exception details from malformed Crashlytics payload diagnostics.

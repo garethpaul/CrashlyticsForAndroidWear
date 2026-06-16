@@ -62,6 +62,7 @@ Helpful reports include:
 ## Mobile Privacy Notes
 
 The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing.
+Wear data-event diagnostics omit raw provider status messages while preserving status guards and buffer release.
 Wear peer connection diagnostics omit paired-device display names while preserving package-scoped node extras.
 
 If this project requests device permissions such as location, camera, microphone, contacts, Bluetooth, health data, or local storage access, reports should describe the permission involved and whether sensitive data can be accessed, persisted, or transmitted unexpectedly. Please avoid testing against real third-party user data or accounts you do not control.

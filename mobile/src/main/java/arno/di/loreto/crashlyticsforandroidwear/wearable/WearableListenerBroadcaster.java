@@ -117,7 +117,7 @@ public class WearableListenerBroadcaster extends WearableListenerService {
                 Log.e(MYLOGGER, "Ignoring data change without status");
                 return;
             }
-            Log.d(MYLOGGER, "onDataChanged"+ dataEvents.getStatus().getStatusMessage());
+            Log.d(MYLOGGER, "Wear data change received");
             /*
             Intent intent = new Intent(ACTION_NAME);
             intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_DATA_CHANGED);
