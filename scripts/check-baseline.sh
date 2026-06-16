@@ -35,6 +35,7 @@ DUMMY_PAYLOAD_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-dummy-message-payload-lo
 SEND_OUTCOME_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-wear-send-outcome-log-redaction.md"
 DUMMY_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-dummy-message-path-log-redaction.md"
 CRASHLYTICS_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-crashlytics-message-path-log-redaction.md"
+MALFORMED_PAYLOAD_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-crashlytics-malformed-payload-log-redaction.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -115,6 +116,7 @@ for path in \
   "docs/plans/2026-06-14-make-root-override-protection.md" \
   "docs/plans/2026-06-15-dummy-message-payload-log-redaction.md" \
   "docs/plans/2026-06-15-dummy-message-path-log-redaction.md" \
+  "docs/plans/2026-06-16-crashlytics-malformed-payload-log-redaction.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -477,8 +479,27 @@ if ! grep -Fq "immutable snapshots" "$README" || \
   exit 1
 fi
 
-if ! grep -Fq "Ignoring malformed crashlytics payload" "$MOBILE_RECEIVER"; then
-  printf '%s\n' "Mobile crash receiver must guard malformed DataMap payloads." >&2
+if [ "$(grep -Fc 'Log.e(MYLOGGER, "Ignoring malformed crashlytics payload");' "$MOBILE_RECEIVER")" -ne 1 ] || \
+  grep -Fq 'Log.e(MYLOGGER, "Ignoring malformed crashlytics payload",' "$MOBILE_RECEIVER"; then
+  printf '%s\n' "Malformed Crashlytics payload logs must keep a constant category without exception details." >&2
+  exit 1
+fi
+
+if [ ! -f "$MALFORMED_PAYLOAD_LOG_PLAN" ] || \
+  ! grep -Fq "Status: Completed" "$MALFORMED_PAYLOAD_LOG_PLAN" || \
+  ! grep -Fq "make check" "$MALFORMED_PAYLOAD_LOG_PLAN" || \
+  ! grep -Fq "hostile mutations were rejected" "$MALFORMED_PAYLOAD_LOG_PLAN" || \
+  ! grep -Fq "No emulator, physical wearable, paired transport, or live malformed message" "$MALFORMED_PAYLOAD_LOG_PLAN"; then
+  printf '%s\n' "Malformed Crashlytics payload log plan must record completed verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Malformed Crashlytics payload diagnostics must never include parser exception details" "$ROOT_DIR/AGENTS.md" || \
+  ! grep -Fq "Malformed Crashlytics payload logs retain a constant rejection category without parser exception details." "$README" || \
+  ! grep -Fq "Malformed Crashlytics payload diagnostics must not include peer-triggered parser exception details." "$ROOT_DIR/SECURITY.md" || \
+  ! grep -Fq "Keep malformed Crashlytics payload diagnostics free of parser exception details" "$VISION" || \
+  ! grep -Fq "Redacted parser exception details from malformed Crashlytics payload diagnostics." "$CHANGES"; then
+  printf '%s\n' "Malformed Crashlytics payload log redaction must remain documented." >&2
   exit 1
 fi
 

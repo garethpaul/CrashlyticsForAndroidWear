@@ -1,5 +1,9 @@
 # Changes
 
+## 2026-06-16
+
+- Redacted parser exception details from malformed Crashlytics payload diagnostics.
+
 ## 2026-06-15
 
 - Redacted peer-controlled paths from dummy Wear message diagnostics while

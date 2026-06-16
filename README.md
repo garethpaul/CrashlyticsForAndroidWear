@@ -155,6 +155,7 @@ Gradle checks as paired-device or hosted delivery execution.
   retaining a constant unknown-path category and parent fallback handling.
 - Crashlytics message path diagnostics omit peer-controlled path values while
   retaining a constant unknown-path category and parent fallback handling.
+- Malformed Crashlytics payload logs retain a constant rejection category without parser exception details.
 - Wear send outcome logs omit paired-device names and raw provider status messages
   while retaining constant missing-status, success, and failure diagnostics.
 - Mobile and wear app-data backup is disabled by default for the crash

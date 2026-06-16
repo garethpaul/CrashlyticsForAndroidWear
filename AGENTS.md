@@ -58,6 +58,7 @@
 - Dummy Wear receipt logs must never include decoded or raw message payloads; retain only constant diagnostics.
 - Dummy Wear path diagnostics must never include peer-controlled path values; preserve parent fallback handling.
 - Crashlytics Wear path diagnostics must never include peer-controlled path values; preserve parent fallback handling.
+- Malformed Crashlytics payload diagnostics must never include parser exception details; preserve constant rejection logging.
 - Keep Wear send outcome logs free of paired-device names and raw provider status messages.
 
 ## Agent workflow
