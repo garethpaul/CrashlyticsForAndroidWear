@@ -2,6 +2,7 @@
 
 ## 2026-06-16
 
+- The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing.
 - Redacted parser exception details from malformed Crashlytics payload diagnostics.
 
 ## 2026-06-15

@@ -36,6 +36,7 @@ SEND_OUTCOME_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-wear-send-outcome-log-red
 DUMMY_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-dummy-message-path-log-redaction.md"
 CRASHLYTICS_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-15-crashlytics-message-path-log-redaction.md"
 MALFORMED_PAYLOAD_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-crashlytics-malformed-payload-log-redaction.md"
+BROADCASTER_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-broadcaster-message-path-log-redaction.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -491,6 +492,34 @@ if [ ! -f "$MALFORMED_PAYLOAD_LOG_PLAN" ] || \
   ! grep -Fq "hostile mutations were rejected" "$MALFORMED_PAYLOAD_LOG_PLAN" || \
   ! grep -Fq "No emulator, physical wearable, paired transport, or live malformed message" "$MALFORMED_PAYLOAD_LOG_PLAN"; then
   printf '%s\n' "Malformed Crashlytics payload log plan must record completed verification." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc 'Log.d(MYLOGGER, "Wear message received");' "$WEARABLE_BROADCASTER")" -ne 1 ] || \
+  grep -Eq 'Log\.[^;]*messageEvent\.getPath\(' "$WEARABLE_BROADCASTER"; then
+  printf '%s\n' "Wear message broadcaster diagnostics must not disclose paired-peer paths." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc 'intent.putExtra(EXTRA_DATA_PATH, messageEvent.getPath());' "$WEARABLE_BROADCASTER")" -ne 1 ]; then
+  printf '%s\n' "Wear message broadcaster routing must retain the copied path extra." >&2
+  exit 1
+fi
+
+broadcaster_path_guidance="The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing."
+for guidance_file in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$broadcaster_path_guidance" "$ROOT_DIR/$guidance_file"; then
+    printf '%s\n' "Broadcaster message path redaction guidance must remain checked in: $guidance_file" >&2
+    exit 1
+  fi
+done
+
+if [ ! -f "$BROADCASTER_PATH_LOG_PLAN" ] || \
+  ! grep -Fq "Status: Completed" "$BROADCASTER_PATH_LOG_PLAN" || \
+  ! grep -Fq "make check" "$BROADCASTER_PATH_LOG_PLAN" || \
+  ! grep -Fq "hostile mutations were rejected" "$BROADCASTER_PATH_LOG_PLAN" || \
+  ! grep -Fq "No emulator, physical wearable, paired transport, or live broadcaster message" "$BROADCASTER_PATH_LOG_PLAN"; then
+  printf '%s\n' "Broadcaster message path redaction plan must record completed verification." >&2
   exit 1
 fi
 

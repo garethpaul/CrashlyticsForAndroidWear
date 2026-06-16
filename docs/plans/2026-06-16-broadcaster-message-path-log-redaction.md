@@ -1,6 +1,6 @@
 # Broadcaster Message Path Log Redaction
 
-## Status: In Progress
+## Status: Completed
 
 ## Context
 
@@ -37,3 +37,13 @@ exposes paired-peer-controlled message paths in phone Logcat.
   disclosure is removed.
 - No paired-device transport is available locally.
 - This PR is stacked on PR #12 and must retain base-first merge ordering.
+
+## Verification Results
+
+- `sh -n scripts/check-baseline.sh` and the focused source baseline passed.
+- Four hostile mutations were rejected: restoring path interpolation, removing
+  the routing extra, removing maintained guidance, and reopening plan status.
+- Repository-root and external-directory `make check` passed the source,
+  fixture, wrapper, and Android package gates.
+- No emulator, physical wearable, paired transport, or live broadcaster message
+  was exercised; runtime transport verification remains in the device matrix.

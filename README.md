@@ -95,6 +95,8 @@ Gradle checks as paired-device or hosted delivery execution.
 
 ## Security and Privacy Notes
 
+The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing.
+
 - Both launcher activities and the Google Play services Wear listener declare
   their required exported policy explicitly. The listener accepts only the
   legacy `BIND_LISTENER` action, while crash receivers and internal Wear

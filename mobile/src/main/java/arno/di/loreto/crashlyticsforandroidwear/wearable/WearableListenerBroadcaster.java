@@ -94,7 +94,7 @@ public class WearableListenerBroadcaster extends WearableListenerService {
             Log.e(MYLOGGER, "Ignoring message event without path");
             return;
         }
-        Log.d(MYLOGGER, "onMessageReceived, path="+messageEvent.getPath());
+        Log.d(MYLOGGER, "Wear message received");
         Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_MESSAGE_RECEIVED);
         intent.putExtra(EXTRA_DATA_PATH, messageEvent.getPath());
