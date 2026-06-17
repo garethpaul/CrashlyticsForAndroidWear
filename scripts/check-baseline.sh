@@ -1087,7 +1087,10 @@ if grep -Fq "status: pending_hosted_verification" "$HOSTED_ANDROID_PLAN"; then
   fi
 elif ! grep -Fq "isolated hostile mutations were rejected" "$HOSTED_ANDROID_PLAN" || \
      ! grep -Fq "Exact-head push run" "$HOSTED_ANDROID_PLAN" || \
-     ! grep -Fq "pull-request run" "$HOSTED_ANDROID_PLAN"; then
+     ! grep -Fq "27662776027" "$HOSTED_ANDROID_PLAN" || \
+     ! grep -Fq "pull-request run" "$HOSTED_ANDROID_PLAN" || \
+     ! grep -Fq "27662790231" "$HOSTED_ANDROID_PLAN" || \
+     ! grep -Fq "adda63a1efa0a47493df580b96221335ffad145f" "$HOSTED_ANDROID_PLAN"; then
   printf '%s\n' "Completed hosted Android verification must record mutations and both canonical runs." >&2
   exit 1
 fi

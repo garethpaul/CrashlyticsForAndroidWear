@@ -2,7 +2,7 @@
 title: Crashlytics Wear Secure Hosted Android Verification
 type: security
 date: 2026-06-17
-status: pending_hosted_verification
+status: completed
 execution: code
 ---
 
@@ -195,4 +195,5 @@ transport, physical-device, or credentialed service execution.
   repository transport, SDK packages, setup ordering, Java selection, timeout, SDK
   visibility, canonical command execution, action pinning, duplicate workflow
   strings, maintained guidance, plan status, and hosted-boundary evidence.
-- Exact-head hosted checks remain pending.
+- Exact-head push run `27662776027` and pull-request run `27662790231`
+  succeeded on implementation head `adda63a1efa0a47493df580b96221335ffad145f`.
