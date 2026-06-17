@@ -45,7 +45,8 @@ Priority:
 - Keep Wear send outcome logs limited to constant categories without device names or provider details
 - Keep mobile and wear app-data backup disabled by default
 - Avoid committing Fabric or Crashlytics credentials
-- Keep the SDK-free `make check` baseline running in GitHub Actions
+- Keep SDK-backed mobile and Wear lint, checks, task discovery, and debug
+  assembly running in GitHub Actions with HTTPS-only dependency repositories
 - Retain a checksum-verified direct wrapper for the legacy Gradle 1.12 build
 - Maintain the mobile/wear module relationship
 

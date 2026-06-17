@@ -39,6 +39,7 @@ MALFORMED_PAYLOAD_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-crashlytics-malforme
 BROADCASTER_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-broadcaster-message-path-log-redaction.md"
 PEER_DISPLAY_NAME_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-peer-display-name-log-redaction.md"
 DATA_EVENT_STATUS_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-data-event-status-log-redaction.md"
+HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-17-hosted-android-sdk-verification.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 MAKEFILE="$ROOT_DIR/Makefile"
@@ -121,6 +122,7 @@ for path in \
   "docs/plans/2026-06-15-dummy-message-path-log-redaction.md" \
   "docs/plans/2026-06-16-crashlytics-malformed-payload-log-redaction.md" \
   "docs/plans/2026-06-16-peer-display-name-log-redaction.md" \
+  "docs/plans/2026-06-17-hosted-android-sdk-verification.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -137,6 +139,21 @@ for path in \
   "mobile/src/main/AndroidManifest.xml" \
   "wear/src/main/AndroidManifest.xml"; do
   require_file "$path"
+done
+
+for unique_workflow_contract in \
+  "Install Android SDK packages" \
+  'run: '\''"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-21" "build-tools;24.0.3"'\''' \
+  "Set up Java 8" \
+  "uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0" \
+  "distribution: corretto" \
+  'java-version: "8"' \
+  "Run full Android verification" \
+  "run: make check"; do
+  if [ "$(grep -Fc "$unique_workflow_contract" "$CI_WORKFLOW")" -ne 1 ]; then
+    printf '%s\n' "GitHub Actions workflow must keep exactly one contract: $unique_workflow_contract" >&2
+    exit 1
+  fi
 done
 
 for ignored in ".gradle/" ".idea/" "*.iml" "local.properties" "*/build/" "crashlytics.properties" "crashlytics-build.properties"; do
@@ -162,6 +179,14 @@ require_sha256 "$GRADLEW" "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b7
 require_sha256 "$GRADLEW_BAT" "94102713eb8fb22d032397924c0f38ab2da783ba60d07054339f1190a0c4e2cd" "Windows wrapper must match the reviewed generated script."
 require_sha256 "$WRAPPER_JAR" "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172" "Wrapper JAR must match Gradle's published 8.14.5 checksum."
 require_sha256 "$WRAPPER" "2353d4dfa6f8f1720767ef2804b76e4be600027875f9feafa331af487bc2bd84" "Wrapper properties must match the reviewed checksum contract."
+
+if [ "$(grep -Fc "maven { url 'https://jcenter.bintray.com' }" "$ROOT_BUILD")" -ne 2 ] || \
+   grep -Fq "jcenter()" "$ROOT_BUILD" || \
+   grep -Eq "maven[[:space:]]*\{[[:space:]]*url[[:space:]]+'http://" \
+     "$ROOT_BUILD" "$MOBILE_BUILD" "$WEAR_BUILD"; then
+  printf '%s\n' "Legacy JCenter coordinates must resolve through the reviewed HTTPS endpoint." >&2
+  exit 1
+fi
 
 if ! grep -Fq "status: completed" "$WRAPPER_PLAN" || \
    ! grep -Fq "fresh temporary Gradle user home" "$WRAPPER_PLAN" || \
@@ -1026,15 +1051,55 @@ for workflow_contract in \
   "workflow_dispatch:" \
   "cancel-in-progress: true" \
   "runs-on: ubuntu-24.04" \
-  "timeout-minutes: 5" \
-  'ANDROID_HOME: ""' \
-  'ANDROID_SDK_ROOT: ""' \
+  "timeout-minutes: 15" \
   "run: make check"; do
   if ! grep -Fq "$workflow_contract" "$CI_WORKFLOW"; then
     printf '%s\n' "GitHub Actions workflow must keep contract: $workflow_contract" >&2
     exit 1
   fi
 done
+
+if grep -Eq '^[[:space:]]*(ANDROID_HOME|ANDROID_SDK_ROOT):[[:space:]]*""' "$CI_WORKFLOW"; then
+  printf '%s\n' "GitHub Actions must keep the hosted Android SDK visible to make check." >&2
+  exit 1
+fi
+
+sdk_install_line=$(grep -nF "Install Android SDK packages" "$CI_WORKFLOW" | cut -d: -f1)
+java_setup_line=$(grep -nF "Set up Java 8" "$CI_WORKFLOW" | cut -d: -f1)
+full_check_line=$(grep -nF "Run full Android verification" "$CI_WORKFLOW" | cut -d: -f1)
+if [ -z "$sdk_install_line" ] || [ -z "$java_setup_line" ] || [ -z "$full_check_line" ] || \
+   [ "$sdk_install_line" -ge "$java_setup_line" ] || [ "$java_setup_line" -ge "$full_check_line" ]; then
+  printf '%s\n' "GitHub Actions must install SDK packages before selecting Java 8 and running the full gate." >&2
+  exit 1
+fi
+
+if ! grep -Eq '^status: (pending_hosted_verification|completed)$' "$HOSTED_ANDROID_PLAN" || \
+   ! grep -Fq "empty temporary Gradle user home" "$HOSTED_ANDROID_PLAN" || \
+   ! grep -Fq "no repository artifact was requested over HTTP" "$HOSTED_ANDROID_PLAN"; then
+  printf '%s\n' "Hosted Android verification plan must record implementation status and local evidence." >&2
+  exit 1
+fi
+
+if grep -Fq "status: pending_hosted_verification" "$HOSTED_ANDROID_PLAN"; then
+  if ! grep -Fq "Exact-head hosted checks remain pending." "$HOSTED_ANDROID_PLAN"; then
+    printf '%s\n' "Pending hosted Android verification must state its exact-head boundary." >&2
+    exit 1
+  fi
+elif ! grep -Fq "isolated hostile mutations were rejected" "$HOSTED_ANDROID_PLAN" || \
+     ! grep -Fq "Exact-head push run" "$HOSTED_ANDROID_PLAN" || \
+     ! grep -Fq "pull-request run" "$HOSTED_ANDROID_PLAN"; then
+  printf '%s\n' "Completed hosted Android verification must record mutations and both canonical runs." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'SDK-backed `make check` gate' "$ROOT_DIR/AGENTS.md" || \
+   ! grep -Fq "then executes mobile and Wear" "$README" || \
+   ! grep -Fq 'guarded SDK-backed `make check` baseline' "$ROOT_DIR/SECURITY.md" || \
+   ! grep -Fq "Keep SDK-backed mobile and Wear lint" "$VISION" || \
+   ! grep -Fq "Forced the legacy JCenter artifact graph through HTTPS" "$CHANGES"; then
+  printf '%s\n' "Maintained guidance must document secure hosted Android verification." >&2
+  exit 1
+fi
 
 if ! grep -Fq 'group: check-${{ github.workflow }}-${{ github.ref }}' "$CI_WORKFLOW"; then
   printf '%s\n' "GitHub Actions workflow must group superseded runs consistently." >&2
@@ -1128,7 +1193,7 @@ if ! grep -Fq "Dummy text messages use UTF-8 on both Wear and mobile endpoints" 
   exit 1
 fi
 
-if ! grep -Fq 'Java 8 or newer JDK with `java` and `javac` on `PATH`' "$README"; then
+if ! grep -Fq 'Java 8 with `java` and `javac` on `PATH`' "$README"; then
   printf '%s\n' "README must document the JDK required by the executable baseline fixture." >&2
   exit 1
 fi

@@ -51,10 +51,13 @@ Helpful reports include:
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - Review found database, model, query, or persistence-related code; changes in those areas should receive security-focused review before merge.
 - Dependency manifests detected: build.gradle, gradle.properties. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
-- GitHub Actions runs the guarded `make check` baseline with a commit-pinned
-  checkout action, read-only repository access, and hosted Android SDK
-  variables cleared; review workflow, Gradle, and checker changes as part of
-  the supply-chain surface.
+- GitHub Actions installs Android API 21 and build-tools 24.0.3 before selecting
+  Corretto 8 and running the guarded SDK-backed `make check` baseline. The
+  workflow keeps checkout pinned and credential-free with read-only repository
+  access; review workflow, Gradle repository transport, and checker changes as
+  one supply-chain surface.
+- Legacy JCenter artifact coordinates resolve only through the explicit HTTPS
+  endpoint. Do not restore `jcenter()` shorthand or an HTTP repository URL.
 - The direct wrapper uses a generated Gradle 8.14.5 bootstrap and pins the
   official Gradle 1.12 distribution checksum; review all wrapper artifacts and
   checksum changes as one supply-chain boundary.

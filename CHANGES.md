@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-17
+
+- Forced the legacy JCenter artifact graph through HTTPS and made GitHub
+  Actions install Android API 21 and build-tools 24.0.3 before running the full
+  mobile and Wear gate under Corretto 8.
+
 ## 2026-06-16
 
 - Wear data-event diagnostics omit raw provider status messages while preserving status guards and buffer release.

@@ -2,7 +2,7 @@
 title: Crashlytics Wear Secure Hosted Android Verification
 type: security
 date: 2026-06-17
-status: planned
+status: pending_hosted_verification
 execution: code
 ---
 
@@ -183,4 +183,16 @@ transport, physical-device, or credentialed service execution.
 
 ## Verification Results
 
-Pending implementation and exact-head validation.
+- A clean empty temporary Gradle user home downloaded the checksum-pinned
+  Gradle distribution and the unchanged legacy dependency graph through HTTPS,
+  loaded the complete task graph, and assembled both debug APKs. The captured
+  output confirmed that no repository artifact was requested over HTTP.
+- Repository-root and external working directory `make check` passed under
+  Corretto 8 with Android API 21 and build-tools 24.0.3, including zero-finding
+  mobile/Wear lint, Gradle checks, task discovery, portable fixtures, and both
+  debug APK assemblies.
+- Fifteen isolated hostile mutations were rejected across root and module
+  repository transport, SDK packages, setup ordering, Java selection, timeout, SDK
+  visibility, canonical command execution, action pinning, duplicate workflow
+  strings, maintained guidance, plan status, and hosted-boundary evidence.
+- Exact-head hosted checks remain pending.

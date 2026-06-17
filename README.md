@@ -33,8 +33,8 @@ Additional scan context:
 ### Prerequisites
 
 - Git
-- Java 8 or newer JDK with `java` and `javac` on `PATH`
-- Android Studio or a compatible Android SDK
+- Java 8 with `java` and `javac` on `PATH`
+- Android Studio or an Android SDK with API 21 and build-tools 24.0.3
 - Gradle or the checked-in Gradle wrapper when present
 
 ### Setup
@@ -61,11 +61,13 @@ scripts/check-baseline.sh
 
 GitHub Actions runs `make check` on pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only
-repository access, an Ubuntu 24.04 runner, and a bounded runtime. It does not persist checkout credentials and explicitly clears hosted Android SDK
-variables so Gradle 1.12 and the discontinued Fabric/JCenter stack are not
-invoked by an incompatible modern runner image.
+repository access, an Ubuntu 24.04 runner, and a bounded runtime. It does not persist checkout credentials. The workflow installs Android API 21 and
+build-tools 24.0.3 before selecting Corretto 8, then executes mobile and Wear
+lint, Gradle checks, task discovery, and both debug APK assemblies. The legacy
+JCenter coordinates resolve through an explicit HTTPS endpoint during
+dependency bootstrap.
 
-When the legacy Android toolchain can resolve all discontinued artifacts, use:
+With Java 8, Android API 21, and build-tools 24.0.3 configured, use:
 
 ```bash
 ANDROID_HOME=/path/to/android-sdk ./gradlew lint --no-daemon
@@ -79,7 +81,10 @@ while retaining Gradle 1.12 for project compatibility. The committed
 `distributionSha256Sum` authenticates the official Gradle 1.12 archive before
 it is installed.
 
-When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
+When the required SDK or runtime is unavailable, use static checks and source
+review first, then verify on a machine that has the matching platform
+toolchain. Do not treat that fallback as equivalent to the SDK-backed hosted
+gate.
 
 Use [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) to record exact-head
 paired phone/Wear and private Crashlytics evidence. Keep unavailable external

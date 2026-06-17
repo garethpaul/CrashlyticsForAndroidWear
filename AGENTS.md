@@ -51,6 +51,7 @@
 - Replace the placeholder only in local, private configuration when testing against a real Crashlytics/Fabric project.
 - This looks like a legacy Android project or sample. Expect Android SDK, Gradle, and support-library versions to matter.
 - The Gradle wrapper is intentionally kept on the legacy 1.12 distribution, but it must use HTTPS. Fabric and Play Services Wear dependencies are pinned to avoid dynamic resolution drift, and the unused legacy wearable support dependency is intentionally removed.
+- GitHub Actions installs Android API 21 and build-tools 24.0.3 before selecting Corretto 8, then runs the SDK-backed `make check` gate. Preserve the HTTPS-only legacy repositories and do not restore an SDK-free hosted path.
 - Debug builds disable Fabric resource tasks while the all-zero Crashlytics API key placeholder is present. Use local untracked configuration for real Crashlytics credentials when testing against Fabric.
 - Wear crash forwarding sends stack traces as text, package-scopes internal broadcasts, and disconnects GoogleApiClient clients after message sends.
 - Wear uncaught-exception receipt logs must never include the Throwable; preserve report forwarding and previous-handler delegation.
