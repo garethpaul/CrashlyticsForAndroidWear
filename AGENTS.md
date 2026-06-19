@@ -56,6 +56,8 @@
 - Wear crash forwarding sends stack traces as text, package-scopes internal broadcasts, and disconnects GoogleApiClient clients after message sends.
 - Wear uncaught-exception receipt logs must never include the Throwable; preserve report forwarding and previous-handler delegation.
 - Wear message and node wrappers are immutable snapshots; message payload arrays are defensively copied on capture and access.
+- Snapshot Wear message events before placing payload arrays into asynchronous broadcast Intents.
+- Validate the committed Gradle wrapper JAR against Gradle's published checksum before executing it.
 - Dummy Wear receipt logs must never include decoded or raw message payloads; retain only constant diagnostics.
 - Dummy Wear path diagnostics must never include peer-controlled path values; preserve parent fallback handling.
 - Crashlytics Wear path diagnostics must never include peer-controlled path values; preserve parent fallback handling.

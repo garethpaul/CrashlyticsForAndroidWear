@@ -22,6 +22,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Validate Gradle wrapper provenance
+        uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+
       - name: Install Android SDK packages
         run: '"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-21" "build-tools;24.0.3"'
 
@@ -30,6 +33,9 @@ jobs:
         with:
           distribution: corretto
           java-version: "8"
+
+      - name: Verify reviewed Gradle wrapper behavior
+        run: scripts/verify-gradle-wrapper.sh
 
       - name: Run full Android verification
         run: make check

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 ROOT_BUILD="$ROOT_DIR/build.gradle"
 MOBILE_BUILD="$ROOT_DIR/mobile/build.gradle"
 WEAR_BUILD="$ROOT_DIR/wear/build.gradle"
@@ -78,10 +78,103 @@ distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
 distributionSha256Sum=cf111fcb34804940404e79eaf307876acb8434005bc4cc782d260730a0a2a4f2
 distributionUrl=https\://services.gradle.org/distributions/gradle-1.12-all.zip
-networkTimeout=10000
+networkTimeout=60000
 validateDistributionUrl=true
 zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists
+EOF
+}
+
+expected_check_workflow() {
+  cat <<'EOF'
+name: Check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Validate Gradle wrapper provenance
+        uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+
+      - name: Install Android SDK packages
+        run: '"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-21" "build-tools;24.0.3"'
+
+      - name: Set up Java 8
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: corretto
+          java-version: "8"
+
+      - name: Verify reviewed Gradle wrapper behavior
+        run: scripts/verify-gradle-wrapper.sh
+
+      - name: Run full Android verification
+        run: make check
+EOF
+}
+
+expected_makefile() {
+  cat <<'EOF'
+.PHONY: baseline-test build check lint tasks test verify
+
+override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+ANDROID_HOME ?= /home/gjones/android-sdk
+GRADLE ?= $(ROOT)gradlew
+
+lint:
+	$(ROOT)scripts/check-baseline.sh
+	@if [ -d "$(ANDROID_HOME)" ]; then \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" lint --no-daemon; \
+	else \
+		echo "Android SDK not found at $(ANDROID_HOME); Gradle lint skipped."; \
+	fi
+
+test:
+	$(ROOT)scripts/test-wear-event-snapshots.sh
+	@if [ -d "$(ANDROID_HOME)" ]; then \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" check --no-daemon; \
+	else \
+		echo "Android SDK not found at $(ANDROID_HOME); Gradle check skipped."; \
+	fi
+
+tasks:
+	@if [ -d "$(ANDROID_HOME)" ]; then \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" tasks --no-daemon; \
+	else \
+		echo "Android SDK not found at $(ANDROID_HOME); Gradle tasks skipped."; \
+	fi
+
+build:
+	@if [ -d "$(ANDROID_HOME)" ]; then \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" assembleDebug --no-daemon; \
+	else \
+		echo "Android SDK not found at $(ANDROID_HOME); Gradle build skipped."; \
+	fi
+
+verify: lint test tasks build
+
+baseline-test:
+	$(ROOT)scripts/test-check-baseline.sh
+
+check: verify baseline-test
 EOF
 }
 
@@ -127,6 +220,8 @@ for path in \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "gradle/wrapper/gradle-wrapper.jar" \
+  "scripts/test-check-baseline.sh" \
+  "scripts/verify-gradle-wrapper.sh" \
   "settings.gradle" \
   "build.gradle" \
   "scripts/Utf8RoundTripCheck.java" \
@@ -142,12 +237,16 @@ for path in \
 done
 
 for unique_workflow_contract in \
+  "Validate Gradle wrapper provenance" \
+  "uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0" \
   "Install Android SDK packages" \
   'run: '\''"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-21" "build-tools;24.0.3"'\''' \
   "Set up Java 8" \
   "uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0" \
   "distribution: corretto" \
   'java-version: "8"' \
+  "Verify reviewed Gradle wrapper behavior" \
+  "run: scripts/verify-gradle-wrapper.sh" \
   "Run full Android verification" \
   "run: make check"; do
   if [ "$(grep -Fc "$unique_workflow_contract" "$CI_WORKFLOW")" -ne 1 ]; then
@@ -155,6 +254,16 @@ for unique_workflow_contract in \
     exit 1
   fi
 done
+
+if [ "$(cat "$CI_WORKFLOW")" != "$(expected_check_workflow)" ]; then
+  printf '%s\n' "GitHub Actions check workflow must match the exact reviewed contract." >&2
+  exit 1
+fi
+
+if [ "$(cat "$MAKEFILE")" != "$(expected_makefile)" ]; then
+  printf '%s\n' "Makefile must match the exact reviewed verification graph." >&2
+  exit 1
+fi
 
 for ignored in ".gradle/" ".idea/" "*.iml" "local.properties" "*/build/" "crashlytics.properties" "crashlytics-build.properties"; do
   if ! grep -Fq "$ignored" "$ROOT_DIR/.gitignore"; then
@@ -178,7 +287,9 @@ fi
 require_sha256 "$GRADLEW" "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409" "Unix wrapper must match the reviewed generated script."
 require_sha256 "$GRADLEW_BAT" "94102713eb8fb22d032397924c0f38ab2da783ba60d07054339f1190a0c4e2cd" "Windows wrapper must match the reviewed generated script."
 require_sha256 "$WRAPPER_JAR" "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172" "Wrapper JAR must match Gradle's published 8.14.5 checksum."
-require_sha256 "$WRAPPER" "2353d4dfa6f8f1720767ef2804b76e4be600027875f9feafa331af487bc2bd84" "Wrapper properties must match the reviewed checksum contract."
+require_sha256 "$WRAPPER" "7bbfd5380175e2a5d096f5d78897f8a1f23448902c795a315ef0b2bb91515f28" "Wrapper properties must match the reviewed checksum contract."
+require_sha256 "$ROOT_DIR/scripts/verify-gradle-wrapper.sh" "7faa35602944d3c6d13268f18ab12e2c7b343adfe304cf5374a077cb1623d94d" "Wrapper verification script must match the reviewed runtime contract."
+require_sha256 "$ROOT_DIR/scripts/test-check-baseline.sh" "18c5fb4ccd9ffb219c9f7607a2cdd2f7992b6adb57cd3a3eb5898a02769f3f63" "Hostile mutation test script must match the reviewed gate contract."
 
 if [ "$(grep -Fc "maven { url 'https://jcenter.bintray.com' }" "$ROOT_BUILD")" -ne 2 ] || \
    grep -Fq "jcenter()" "$ROOT_BUILD" || \
@@ -425,7 +536,7 @@ fi
 
 if ! grep -Fq "EXTRA_MESSAGE_DATA" "$WEARABLE_BROADCASTER" ||
   ! grep -Fq "EXTRA_NODE_ID" "$WEARABLE_BROADCASTER" ||
-  ! grep -Fq "intent.putExtra(EXTRA_MESSAGE_DATA, messageEvent.getData())" "$WEARABLE_BROADCASTER" ||
+  ! grep -Fq "intent.putExtra(EXTRA_MESSAGE_DATA, messageSnapshot.getData())" "$WEARABLE_BROADCASTER" ||
   ! grep -Fq "intent.putExtra(EXTRA_NODE_ID, peer.getId())" "$WEARABLE_BROADCASTER"; then
   printf '%s\n' "Wear event broadcasts must use typed Intent extras for messages and nodes." >&2
   exit 1
@@ -467,6 +578,13 @@ if ! grep -Fq "new SerializableMessageEvent(" "$WEARABLE_RECEIVER" ||
   ! grep -Fq "intent.getByteArrayExtra(WearableListenerBroadcaster.EXTRA_MESSAGE_DATA)" "$WEARABLE_RECEIVER" ||
   ! grep -Fq "intent.getStringExtra(WearableListenerBroadcaster.EXTRA_NODE_ID)" "$WEARABLE_RECEIVER"; then
   printf '%s\n' "Wear event receiver must rebuild typed events from Intent extras." >&2
+  exit 1
+fi
+
+if ! grep -Fq "SerializableMessageEvent messageSnapshot = new SerializableMessageEvent(messageEvent);" "$WEARABLE_BROADCASTER" || \
+  ! grep -Fq "intent.putExtra(EXTRA_MESSAGE_DATA, messageSnapshot.getData());" "$WEARABLE_BROADCASTER" || \
+  grep -Fq "intent.putExtra(EXTRA_MESSAGE_DATA, messageEvent.getData());" "$WEARABLE_BROADCASTER"; then
+  printf '%s\n' "Wear event broadcaster must snapshot mutable message payloads before the asynchronous broadcast boundary." >&2
   exit 1
 fi
 
@@ -529,7 +647,7 @@ if [ "$(grep -Fc 'Log.d(MYLOGGER, "Wear message received");' "$WEARABLE_BROADCAS
   exit 1
 fi
 
-if [ "$(grep -Fc 'intent.putExtra(EXTRA_DATA_PATH, messageEvent.getPath());' "$WEARABLE_BROADCASTER")" -ne 1 ]; then
+if [ "$(grep -Fc 'intent.putExtra(EXTRA_DATA_PATH, messageSnapshot.getPath());' "$WEARABLE_BROADCASTER")" -ne 1 ]; then
   printf '%s\n' "Wear message broadcaster routing must retain the copied path extra." >&2
   exit 1
 fi
@@ -1052,6 +1170,7 @@ for workflow_contract in \
   "cancel-in-progress: true" \
   "runs-on: ubuntu-24.04" \
   "timeout-minutes: 15" \
+  "run: scripts/verify-gradle-wrapper.sh" \
   "run: make check"; do
   if ! grep -Fq "$workflow_contract" "$CI_WORKFLOW"; then
     printf '%s\n' "GitHub Actions workflow must keep contract: $workflow_contract" >&2
@@ -1064,12 +1183,18 @@ if grep -Eq '^[[:space:]]*(ANDROID_HOME|ANDROID_SDK_ROOT):[[:space:]]*""' "$CI_W
   exit 1
 fi
 
+wrapper_validation_line=$(grep -nF "Validate Gradle wrapper provenance" "$CI_WORKFLOW" | cut -d: -f1)
 sdk_install_line=$(grep -nF "Install Android SDK packages" "$CI_WORKFLOW" | cut -d: -f1)
 java_setup_line=$(grep -nF "Set up Java 8" "$CI_WORKFLOW" | cut -d: -f1)
+wrapper_behavior_line=$(grep -nF "Verify reviewed Gradle wrapper behavior" "$CI_WORKFLOW" | cut -d: -f1)
 full_check_line=$(grep -nF "Run full Android verification" "$CI_WORKFLOW" | cut -d: -f1)
-if [ -z "$sdk_install_line" ] || [ -z "$java_setup_line" ] || [ -z "$full_check_line" ] || \
-   [ "$sdk_install_line" -ge "$java_setup_line" ] || [ "$java_setup_line" -ge "$full_check_line" ]; then
-  printf '%s\n' "GitHub Actions must install SDK packages before selecting Java 8 and running the full gate." >&2
+if [ -z "$wrapper_validation_line" ] || [ -z "$sdk_install_line" ] || \
+   [ -z "$java_setup_line" ] || [ -z "$wrapper_behavior_line" ] || [ -z "$full_check_line" ] || \
+   [ "$wrapper_validation_line" -ge "$sdk_install_line" ] || \
+   [ "$sdk_install_line" -ge "$java_setup_line" ] || \
+   [ "$java_setup_line" -ge "$wrapper_behavior_line" ] || \
+   [ "$wrapper_behavior_line" -ge "$full_check_line" ]; then
+  printf '%s\n' "GitHub Actions must validate wrapper provenance before executing it and running the full gate." >&2
   exit 1
 fi
 
@@ -1122,6 +1247,25 @@ if ! grep -Fq "status: completed" "$MAKE_ROOT_PROTECTION_PLAN" || \
    ! grep -Fq "external working directory" "$MAKE_ROOT_PROTECTION_PLAN" || \
    ! grep -Fq "Four isolated hostile mutations were rejected" "$MAKE_ROOT_PROTECTION_PLAN"; then
   printf '%s\n' "Make root protection plan must record completed hostile-override and external verification." >&2
+  exit 1
+fi
+
+if [ "$(grep -Ec '^verify:' "$MAKEFILE")" -ne 1 ] ||
+  [ "$(grep -Fxc 'verify: lint test tasks build' "$MAKEFILE")" -ne 1 ] ||
+  [ "$(grep -Ec '^check:' "$MAKEFILE")" -ne 1 ] ||
+  [ "$(grep -Fxc 'check: verify baseline-test' "$MAKEFILE")" -ne 1 ] ||
+  ! awk '
+    /^baseline-test:$/ {
+      rule_count++
+      if (getline > 0 && $0 == "\t$(ROOT)scripts/test-check-baseline.sh") {
+        recipe_count++
+      }
+    }
+    END {
+      exit !(rule_count == 1 && recipe_count == 1)
+    }
+  ' "$MAKEFILE"; then
+  printf '%s\n' "Make check must retain the hostile mutation test dependency." >&2
   exit 1
 fi
 

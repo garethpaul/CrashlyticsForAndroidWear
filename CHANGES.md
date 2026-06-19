@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-19
+
+- Validated the committed Gradle wrapper against Gradle's published checksum
+  before any hosted wrapper execution.
+- Snapshotted Wear message events before placing their mutable payload bytes on
+  the asynchronous broadcast boundary.
+
 ## 2026-06-17
 
 - Forced the legacy JCenter artifact graph through HTTPS and made GitHub
