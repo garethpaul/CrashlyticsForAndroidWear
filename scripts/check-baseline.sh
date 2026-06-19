@@ -102,7 +102,13 @@ jobs:
         run: scripts/verify-gradle-wrapper.sh
 
       - name: Run baseline
-        run: make check
+        run: scripts/check-baseline.sh
+
+      - name: Run Make verification
+        run: make verify
+
+      - name: Run hostile mutation tests
+        run: scripts/test-check-baseline.sh
 EOF
 }
 
@@ -181,6 +187,7 @@ require_sha256 "$GRADLEW_BAT" "94102713eb8fb22d032397924c0f38ab2da783ba60d070543
 require_sha256 "$WRAPPER_JAR" "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172" "Wrapper JAR must match Gradle's published 8.14.5 checksum."
 require_sha256 "$WRAPPER" "7bbfd5380175e2a5d096f5d78897f8a1f23448902c795a315ef0b2bb91515f28" "Wrapper properties must match the reviewed checksum contract."
 require_sha256 "$ROOT_DIR/scripts/verify-gradle-wrapper.sh" "7faa35602944d3c6d13268f18ab12e2c7b343adfe304cf5374a077cb1623d94d" "Wrapper verification script must match the reviewed runtime contract."
+require_sha256 "$ROOT_DIR/scripts/test-check-baseline.sh" "97cc3d37942685409ffb3e0fb1cd88ebde86d9d5996f8e2042f37e802ab0514a" "Hostile mutation test script must match the reviewed gate contract."
 
 if ! grep -Fq "status: completed" "$WRAPPER_PLAN" || \
    ! grep -Fq "fresh temporary Gradle user home" "$WRAPPER_PLAN" || \
@@ -717,7 +724,9 @@ for workflow_contract in \
   "timeout-minutes: 5" \
   'ANDROID_HOME: ""' \
   'ANDROID_SDK_ROOT: ""' \
-  "run: make check"; do
+  "run: scripts/check-baseline.sh" \
+  "run: make verify" \
+  "run: scripts/test-check-baseline.sh"; do
   if ! grep -Fq "$workflow_contract" "$CI_WORKFLOW"; then
     printf '%s\n' "GitHub Actions workflow must keep contract: $workflow_contract" >&2
     exit 1
@@ -732,6 +741,13 @@ fi
 if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE" ||
   [ "$(grep -c -- '--project-dir "$(ROOT)"' "$MAKEFILE")" -ne 4 ]; then
   printf '%s\n' "Make targets must resolve Gradle and its project directory from the repository root." >&2
+  exit 1
+fi
+
+if ! grep -Fxq 'baseline-test:' "$MAKEFILE" ||
+  ! grep -Fxq 'check: verify baseline-test' "$MAKEFILE" ||
+  ! grep -Fq '$(ROOT)scripts/test-check-baseline.sh' "$MAKEFILE"; then
+  printf '%s\n' "Make check must retain the hostile mutation test dependency." >&2
   exit 1
 fi
 

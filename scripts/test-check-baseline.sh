@@ -17,13 +17,21 @@ if ! grep -Fq 'uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
 fi
 
 git -C "$ROOT_DIR" worktree add --detach "$TMP_DIR/repo" HEAD >/dev/null
-git -C "$ROOT_DIR" diff --binary HEAD -- . ':!scripts/test-check-baseline.sh' |
-  git -C "$TMP_DIR/repo" apply
-git -C "$TMP_DIR/repo" add -A
-git -C "$TMP_DIR/repo" \
-  -c user.name='Baseline Test' \
-  -c user.email='baseline-test@example.invalid' \
-  commit -m 'test candidate' >/dev/null
+git -C "$ROOT_DIR" diff --binary HEAD -- . >"$TMP_DIR/candidate.patch"
+if [ -s "$TMP_DIR/candidate.patch" ]; then
+  git -C "$TMP_DIR/repo" apply "$TMP_DIR/candidate.patch"
+  git -C "$TMP_DIR/repo" add -A
+  git -C "$TMP_DIR/repo" \
+    -c user.name='Baseline Test' \
+    -c user.email='baseline-test@example.invalid' \
+    commit -m 'test candidate' >/dev/null
+fi
+
+if ! "$TMP_DIR/repo/scripts/check-baseline.sh" >"$TMP_DIR/green-control.out" 2>&1; then
+  printf '%s\n' "Unmodified candidate failed the baseline before hostile mutations." >&2
+  cat "$TMP_DIR/green-control.out" >&2
+  exit 1
+fi
 
 expect_rejected() {
   name=$1
@@ -41,7 +49,7 @@ expect_rejected() {
 
 expect_rejected "ignored-baseline-failure" '
   repo=$1
-  sed -i.bak "s/run: make check/run: make check || true/" "$repo/.github/workflows/check.yml"
+  sed -i.bak "s#run: scripts/check-baseline.sh#run: scripts/check-baseline.sh || true#" "$repo/.github/workflows/check.yml"
   rm "$repo/.github/workflows/check.yml.bak"
 '
 
@@ -75,6 +83,17 @@ expect_rejected "modified-wrapper-jar" '
 expect_rejected "modified-wrapper-verifier" '
   repo=$1
   printf "exit 0\\n" >>"$repo/scripts/verify-gradle-wrapper.sh"
+'
+
+expect_rejected "disabled-hostile-tests" '
+  repo=$1
+  printf "#!/usr/bin/env sh\\nexit 0\\n" >"$repo/scripts/test-check-baseline.sh"
+'
+
+expect_rejected "removed-hostile-test-dependency" '
+  repo=$1
+  sed -i.bak "s/check: verify baseline-test/check: verify/" "$repo/Makefile"
+  rm "$repo/Makefile.bak"
 '
 
 expect_rejected "private-wear-listener" '
