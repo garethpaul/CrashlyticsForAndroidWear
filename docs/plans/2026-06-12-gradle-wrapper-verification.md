@@ -18,6 +18,8 @@ forwarding behavior.
 - Regenerate all wrapper artifacts with official Gradle 8.14.5 tooling while
   retaining the official Gradle 1.12 all distribution.
 - Pin the official distribution SHA-256 and exact generated artifacts.
+- Keep the wrapper download bounded with a 60-second network timeout so the
+  legacy all-distribution is reliable without allowing indefinite stalls.
 - Preserve build files, modules, credentials placeholder, manifests, crash
   reporting, bounded Wear waits, and existing credential-free CI.
 - Pass fresh bootstrap, wrong-checksum rejection, SDK-free/SDK-backed gates,
@@ -40,6 +42,8 @@ Android SDK:
 - The full gate passed from an external working directory.
 - Checker hostile mutations rejected altered properties, launcher, JAR,
   guidance, and completion evidence.
+- Hosted CI now bootstraps Gradle 1.12 from a fresh Gradle user home and proves
+  that the wrapper rejects an intentionally incorrect distribution checksum.
 
 ## Sources
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 ROOT_BUILD="$ROOT_DIR/build.gradle"
 MOBILE_BUILD="$ROOT_DIR/mobile/build.gradle"
 WEAR_BUILD="$ROOT_DIR/wear/build.gradle"
@@ -56,10 +56,53 @@ distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
 distributionSha256Sum=cf111fcb34804940404e79eaf307876acb8434005bc4cc782d260730a0a2a4f2
 distributionUrl=https\://services.gradle.org/distributions/gradle-1.12-all.zip
-networkTimeout=10000
+networkTimeout=60000
 validateDistributionUrl=true
 zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists
+EOF
+}
+
+expected_check_workflow() {
+  cat <<'EOF'
+name: Check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      ANDROID_HOME: ""
+      ANDROID_SDK_ROOT: ""
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 8
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: corretto
+          java-version: "8"
+
+      - name: Verify Gradle wrapper
+        run: scripts/verify-gradle-wrapper.sh
+
+      - name: Run baseline
+        run: make check
 EOF
 }
 
@@ -96,6 +139,8 @@ for path in \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
   "gradle/wrapper/gradle-wrapper.jar" \
+  "scripts/test-check-baseline.sh" \
+  "scripts/verify-gradle-wrapper.sh" \
   "settings.gradle" \
   "build.gradle" \
   "mobile/build.gradle" \
@@ -106,6 +151,11 @@ for path in \
   "wear/src/main/AndroidManifest.xml"; do
   require_file "$path"
 done
+
+if [ "$(cat "$CI_WORKFLOW")" != "$(expected_check_workflow)" ]; then
+  printf '%s\n' "GitHub Actions check workflow must match the exact reviewed contract." >&2
+  exit 1
+fi
 
 for ignored in ".gradle/" ".idea/" "*.iml" "local.properties" "*/build/" "crashlytics.properties" "crashlytics-build.properties"; do
   if ! grep -Fq "$ignored" "$ROOT_DIR/.gitignore"; then
@@ -129,7 +179,8 @@ fi
 require_sha256 "$GRADLEW" "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409" "Unix wrapper must match the reviewed generated script."
 require_sha256 "$GRADLEW_BAT" "94102713eb8fb22d032397924c0f38ab2da783ba60d07054339f1190a0c4e2cd" "Windows wrapper must match the reviewed generated script."
 require_sha256 "$WRAPPER_JAR" "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172" "Wrapper JAR must match Gradle's published 8.14.5 checksum."
-require_sha256 "$WRAPPER" "2353d4dfa6f8f1720767ef2804b76e4be600027875f9feafa331af487bc2bd84" "Wrapper properties must match the reviewed checksum contract."
+require_sha256 "$WRAPPER" "7bbfd5380175e2a5d096f5d78897f8a1f23448902c795a315ef0b2bb91515f28" "Wrapper properties must match the reviewed checksum contract."
+require_sha256 "$ROOT_DIR/scripts/verify-gradle-wrapper.sh" "7faa35602944d3c6d13268f18ab12e2c7b343adfe304cf5374a077cb1623d94d" "Wrapper verification script must match the reviewed runtime contract."
 
 if ! grep -Fq "status: completed" "$WRAPPER_PLAN" || \
    ! grep -Fq "fresh temporary Gradle user home" "$WRAPPER_PLAN" || \

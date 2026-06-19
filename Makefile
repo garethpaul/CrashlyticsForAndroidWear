@@ -1,4 +1,4 @@
-.PHONY: build check lint tasks test verify
+.PHONY: baseline-test build check lint tasks test verify
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 ANDROID_HOME ?= /home/gjones/android-sdk
@@ -35,4 +35,7 @@ build:
 
 verify: lint test tasks build
 
-check: verify
+baseline-test:
+	$(ROOT)scripts/test-check-baseline.sh
+
+check: verify baseline-test

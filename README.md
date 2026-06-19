@@ -76,7 +76,8 @@ ANDROID_HOME=/path/to/android-sdk ./gradlew assembleDebug --no-daemon
 The direct wrapper uses Gradle's generated Gradle 8.14.5 bootstrap artifacts
 while retaining Gradle 1.12 for project compatibility. The committed
 `distributionSha256Sum` authenticates the official Gradle 1.12 archive before
-it is installed.
+it is installed. Hosted CI runs the wrapper from a fresh Gradle user home and
+also proves that an intentionally incorrect checksum is rejected.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
