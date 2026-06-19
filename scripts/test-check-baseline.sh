@@ -111,6 +111,23 @@ expect_rejected "removed-verify-dependencies" '
   rm "$repo/Makefile.bak"
 '
 
+expect_rejected "whitespace-prefixed-rule-overrides" '
+  repo=$1
+  cat >>"$repo/Makefile" <<EOF
+
+ lint:
+	@:
+ test:
+	@:
+ tasks:
+	@:
+ build:
+	@:
+ baseline-test:
+	@:
+EOF
+'
+
 expect_rejected "private-wear-listener" '
   repo=$1
   python3 - "$repo/mobile/src/main/AndroidManifest.xml" <<EOF

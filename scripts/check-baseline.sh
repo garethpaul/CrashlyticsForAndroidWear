@@ -112,6 +112,52 @@ jobs:
 EOF
 }
 
+expected_makefile() {
+  cat <<'EOF'
+.PHONY: baseline-test build check lint tasks test verify
+
+ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+ANDROID_HOME ?= /home/gjones/android-sdk
+GRADLE ?= $(ROOT)gradlew
+
+lint:
+	$(ROOT)scripts/check-baseline.sh
+	@if [ -d "$(ANDROID_HOME)" ]; then \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" lint --no-daemon; \
+	else \
+		echo "Android SDK not found at $(ANDROID_HOME); Gradle lint skipped."; \
+	fi
+
+test:
+	@if [ -d "$(ANDROID_HOME)" ]; then \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" check --no-daemon; \
+	else \
+		echo "Android SDK not found at $(ANDROID_HOME); Gradle check skipped."; \
+	fi
+
+tasks:
+	@if [ -d "$(ANDROID_HOME)" ]; then \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" tasks --no-daemon; \
+	else \
+		echo "Android SDK not found at $(ANDROID_HOME); Gradle tasks skipped."; \
+	fi
+
+build:
+	@if [ -d "$(ANDROID_HOME)" ]; then \
+		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" assembleDebug --no-daemon; \
+	else \
+		echo "Android SDK not found at $(ANDROID_HOME); Gradle build skipped."; \
+	fi
+
+verify: lint test tasks build
+
+baseline-test:
+	$(ROOT)scripts/test-check-baseline.sh
+
+check: verify baseline-test
+EOF
+}
+
 require_file() {
   path=$1
   if [ ! -f "$ROOT_DIR/$path" ]; then
@@ -163,6 +209,11 @@ if [ "$(cat "$CI_WORKFLOW")" != "$(expected_check_workflow)" ]; then
   exit 1
 fi
 
+if [ "$(cat "$MAKEFILE")" != "$(expected_makefile)" ]; then
+  printf '%s\n' "Makefile must match the exact reviewed verification graph." >&2
+  exit 1
+fi
+
 for ignored in ".gradle/" ".idea/" "*.iml" "local.properties" "*/build/" "crashlytics.properties" "crashlytics-build.properties"; do
   if ! grep -Fq "$ignored" "$ROOT_DIR/.gitignore"; then
     printf '%s\n' ".gitignore must ignore $ignored" >&2
@@ -187,7 +238,7 @@ require_sha256 "$GRADLEW_BAT" "94102713eb8fb22d032397924c0f38ab2da783ba60d070543
 require_sha256 "$WRAPPER_JAR" "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172" "Wrapper JAR must match Gradle's published 8.14.5 checksum."
 require_sha256 "$WRAPPER" "7bbfd5380175e2a5d096f5d78897f8a1f23448902c795a315ef0b2bb91515f28" "Wrapper properties must match the reviewed checksum contract."
 require_sha256 "$ROOT_DIR/scripts/verify-gradle-wrapper.sh" "7faa35602944d3c6d13268f18ab12e2c7b343adfe304cf5374a077cb1623d94d" "Wrapper verification script must match the reviewed runtime contract."
-require_sha256 "$ROOT_DIR/scripts/test-check-baseline.sh" "7f019ec89c32001031d6c0ee12689bc54796e5a5a23494c58daeae5151dc355b" "Hostile mutation test script must match the reviewed gate contract."
+require_sha256 "$ROOT_DIR/scripts/test-check-baseline.sh" "b499914e9cc29e342593de7dff87cd14c201a053edff9dcec3f477185d7f7f13" "Hostile mutation test script must match the reviewed gate contract."
 
 if ! grep -Fq "status: completed" "$WRAPPER_PLAN" || \
    ! grep -Fq "fresh temporary Gradle user home" "$WRAPPER_PLAN" || \
