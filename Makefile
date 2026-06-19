@@ -1,6 +1,6 @@
-.PHONY: build check lint tasks test verify
+.PHONY: baseline-test build check lint tasks test verify
 
-ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 ANDROID_HOME ?= /home/gjones/android-sdk
 GRADLE ?= $(ROOT)gradlew
 
@@ -13,6 +13,7 @@ lint:
 	fi
 
 test:
+	$(ROOT)scripts/test-wear-event-snapshots.sh
 	@if [ -d "$(ANDROID_HOME)" ]; then \
 		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" check --no-daemon; \
 	else \
@@ -35,4 +36,7 @@ build:
 
 verify: lint test tasks build
 
-check: verify
+baseline-test:
+	$(ROOT)scripts/test-check-baseline.sh
+
+check: verify baseline-test

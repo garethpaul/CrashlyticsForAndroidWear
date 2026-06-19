@@ -33,7 +33,8 @@ Additional scan context:
 ### Prerequisites
 
 - Git
-- Android Studio or a compatible Android SDK
+- Java 8 with `java` and `javac` on `PATH`
+- Android Studio or an Android SDK with API 21 and build-tools 24.0.3
 - Gradle or the checked-in Gradle wrapper when present
 
 ### Setup
@@ -60,11 +61,15 @@ scripts/check-baseline.sh
 
 GitHub Actions runs `make check` on pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only
-repository access, an Ubuntu 24.04 runner, and a bounded runtime. It explicitly clears hosted Android
-SDK variables so Gradle 1.12 and the discontinued Fabric/JCenter stack are not
-invoked by an incompatible modern runner image.
+repository access, an Ubuntu 24.04 runner, and a bounded runtime. It validates
+the committed wrapper JAR against Gradle's published checksums before executing
+it and does not persist checkout credentials. The workflow installs Android API 21 and
+build-tools 24.0.3 before selecting Corretto 8, then executes mobile and Wear
+lint, Gradle checks, task discovery, and both debug APK assemblies. The legacy
+JCenter coordinates resolve through an explicit HTTPS endpoint during
+dependency bootstrap.
 
-When the legacy Android toolchain can resolve all discontinued artifacts, use:
+With Java 8, Android API 21, and build-tools 24.0.3 configured, use:
 
 ```bash
 ANDROID_HOME=/path/to/android-sdk ./gradlew lint --no-daemon
@@ -73,7 +78,21 @@ ANDROID_HOME=/path/to/android-sdk ./gradlew tasks --no-daemon
 ANDROID_HOME=/path/to/android-sdk ./gradlew assembleDebug --no-daemon
 ```
 
-When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
+The direct wrapper uses Gradle's generated Gradle 8.14.5 bootstrap artifacts
+while retaining Gradle 1.12 for project compatibility. The committed
+`distributionSha256Sum` authenticates the official Gradle 1.12 archive before
+it is installed. Hosted CI runs the wrapper from a fresh Gradle user home and
+also proves that an intentionally incorrect checksum is rejected.
+
+When the required SDK or runtime is unavailable, use static checks and source
+review first, then verify on a machine that has the matching platform
+toolchain. Do not treat that fallback as equivalent to the SDK-backed hosted
+gate.
+
+Use [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) to record exact-head
+paired phone/Wear and private Crashlytics evidence. Keep unavailable external
+scenarios as explicit unexecuted rows rather than treating static, Java, or
+Gradle checks as paired-device or hosted delivery execution.
 
 ## Configuration and Secrets
 
@@ -83,6 +102,15 @@ When the required SDK or runtime is unavailable, use static checks and source re
   against a real Crashlytics/Fabric project.
 
 ## Security and Privacy Notes
+
+The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing.
+Wear data-event diagnostics omit raw provider status messages while preserving status guards and buffer release.
+Wear peer connection diagnostics omit paired-device display names while preserving package-scoped node extras.
+
+- Both launcher activities and the Google Play services Wear listener declare
+  their required exported policy explicitly. The listener accepts only the
+  legacy `BIND_LISTENER` action, while crash receivers and internal Wear
+  services remain non-exported.
 
 - Review changes touching external API calls or credential-adjacent configuration; examples from the scan include mobile/src/main/AndroidManifest.xml.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include gradle.properties, mobile/build.gradle, mobile/src/androidTest/java/loreto/di/arno/crashlyticsforandroidwear/ApplicationTest.java, mobile/src/main/AndroidManifest.xml, and 3 more.
@@ -110,6 +138,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   before they reach the paired mobile receiver.
 - Wear throwable stack traces are serialized for the phone without local debug
   logging before the report is forwarded.
+- The Wear uncaught-exception handler records receipt without writing the throwable
+  or its stack trace to Logcat before forwarding and default-handler delegation.
 - Mobile receivers log only the report type before forwarding reconstructed
   Wear throwable payloads to Crashlytics.
 - Mobile receivers forward only the declared Wear device metadata keys to
@@ -121,12 +151,25 @@ When the required SDK or runtime is unavailable, use static checks and source re
   so listener callbacks do not retain Google Play Services resources.
 - Internal Wear listener broadcasts use typed Intent extras instead of Java object serialization
   for peer and message fields.
+- Wear message and node wrappers are immutable snapshots, and message payload
+  bytes are copied both when captured and when read by a receiver.
 - Wear message senders skip missing connected-node results and node ids before
   sending crash or dummy payloads through the Data Layer.
 - Wear message senders skip missing send results and statuses before reading
   Data Layer status details.
 - Wear message senders bound connection, node lookup, and per-node send waits
   to five seconds so stalled paired-device operations cannot hold a service indefinitely.
+- Dummy text messages use UTF-8 on both Wear and mobile endpoints so
+  non-ASCII payloads do not depend on either device's default charset.
+- Dummy message receipt logs omit decoded payload content while retaining a
+  constant delivery diagnostic on the paired mobile device.
+- Dummy message path diagnostics omit peer-controlled path values while
+  retaining a constant unknown-path category and parent fallback handling.
+- Crashlytics message path diagnostics omit peer-controlled path values while
+  retaining a constant unknown-path category and parent fallback handling.
+- Malformed Crashlytics payload logs retain a constant rejection category without parser exception details.
+- Wear send outcome logs omit paired-device names and raw provider status messages
+  while retaining constant missing-status, success, and failure diagnostics.
 - Mobile and wear app-data backup is disabled by default for the crash
   forwarding sample.
 - Mobile and wear lint keep only the old missing API database runner error and
@@ -143,6 +186,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Crashlytics report type allowlisting.
 - See `docs/plans/2026-06-09-wear-throwable-log-redaction.md` for the Wear
   throwable logging baseline.
+- See `docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md` for the
+  uncaught-handler receipt-log boundary.
 - See `docs/plans/2026-06-09-mobile-throwable-log-redaction.md` for mobile
   Crashlytics receipt log redaction.
 - See `docs/plans/2026-06-09-wear-connected-node-send-guard.md` for
@@ -157,6 +202,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Actions baseline.
 - See `docs/plans/2026-06-10-crash-metadata-privacy-boundary.md` for the
   Crashlytics metadata allowlist and hardware identifier privacy boundary.
+- See `docs/plans/2026-06-15-dummy-message-payload-log-redaction.md` for the
+  dummy-message Logcat privacy boundary.
 
 ## Contributing
 

@@ -5,6 +5,8 @@ import android.util.Log;
 
 import com.google.android.gms.wearable.MessageEvent;
 
+import java.nio.charset.Charset;
+
 import arno.di.loreto.crashlyticsforandroidwear.wearable.WearableListenerReceiver;
 
 /**
@@ -15,6 +17,7 @@ import arno.di.loreto.crashlyticsforandroidwear.wearable.WearableListenerReceive
 public class DummyWearableListenerReceiver extends WearableListenerReceiver {
 
     private static final String MYLOGGER = DummyWearableListenerReceiver.class.getName();
+    private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /**
      * The path handled by this receiver.
@@ -39,11 +42,11 @@ public class DummyWearableListenerReceiver extends WearableListenerReceiver {
                 Log.e(MYLOGGER, "Ignoring dummy message without payload");
                 return;
             }
-            String message = new String(messageData);
-            Log.d(MYLOGGER, "message received, path="+messageEvent.getPath() + ", message="+ message);
+            String decodedMessage = new String(messageData, UTF_8);
+            Log.d(MYLOGGER, "Dummy message received");
         }
         else {
-            Log.d(MYLOGGER, "unknown path:"+ messageEvent.getPath());
+            Log.d(MYLOGGER, "Unknown dummy message path");
             super.onMessageReceived(context, messageEvent);
         }
     }

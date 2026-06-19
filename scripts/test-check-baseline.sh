@@ -1,0 +1,174 @@
+#!/usr/bin/env sh
+set -eu
+
+ROOT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+TMP_DIR=$(mktemp -d)
+
+cleanup() {
+  git -C "$ROOT_DIR" worktree remove --force "$TMP_DIR/repo" >/dev/null 2>&1 || true
+  rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT HUP INT TERM
+
+if ! grep -Fq 'uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92' "$ROOT_DIR/.github/workflows/check.yml" ||
+  ! grep -Fq 'uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654' "$ROOT_DIR/.github/workflows/check.yml" ||
+  ! grep -Fq 'run: scripts/verify-gradle-wrapper.sh' "$ROOT_DIR/.github/workflows/check.yml"; then
+  printf '%s\n' "GitHub Actions must validate wrapper provenance before the reviewed runtime verification." >&2
+  exit 1
+fi
+
+git -C "$ROOT_DIR" worktree add --detach "$TMP_DIR/repo" HEAD >/dev/null
+git -C "$ROOT_DIR" diff --binary HEAD -- . >"$TMP_DIR/candidate.patch"
+if [ -s "$TMP_DIR/candidate.patch" ]; then
+  git -C "$TMP_DIR/repo" apply "$TMP_DIR/candidate.patch"
+  git -C "$TMP_DIR/repo" add -A
+  git -C "$TMP_DIR/repo" \
+    -c user.name='Baseline Test' \
+    -c user.email='baseline-test@example.invalid' \
+    commit -m 'test candidate' >/dev/null
+fi
+
+if ! "$TMP_DIR/repo/scripts/check-baseline.sh" >"$TMP_DIR/green-control.out" 2>&1; then
+  printf '%s\n' "Unmodified candidate failed the baseline before hostile mutations." >&2
+  cat "$TMP_DIR/green-control.out" >&2
+  exit 1
+fi
+
+expect_rejected() {
+  name=$1
+  mutation=$2
+
+  git -C "$TMP_DIR/repo" reset --hard HEAD >/dev/null
+  sh -c "$mutation" sh "$TMP_DIR/repo"
+
+  if "$TMP_DIR/repo/scripts/check-baseline.sh" >"$TMP_DIR/$name.out" 2>&1; then
+    printf '%s\n' "Hostile mutation was accepted: $name" >&2
+    cat "$TMP_DIR/$name.out" >&2
+    exit 1
+  fi
+}
+
+expect_rejected "ignored-full-check-failure" '
+  repo=$1
+  sed -i.bak "s#run: make check#run: make check || true#" "$repo/.github/workflows/check.yml"
+  rm "$repo/.github/workflows/check.yml.bak"
+'
+
+expect_rejected "skipped-full-check-step" '
+  repo=$1
+  sed -i.bak "/name: Run full Android verification/a\\
+        if: false" "$repo/.github/workflows/check.yml"
+  rm "$repo/.github/workflows/check.yml.bak"
+'
+
+expect_rejected "removed-wrapper-provenance-validation" '
+  repo=$1
+  sed -i.bak "/name: Validate Gradle wrapper provenance/,+1d" "$repo/.github/workflows/check.yml"
+  rm "$repo/.github/workflows/check.yml.bak"
+'
+
+expect_rejected "extra-workflow-step" '
+  repo=$1
+  cat >>"$repo/.github/workflows/check.yml" <<EOF
+
+      - name: Unreviewed command
+        run: echo unreviewed
+EOF
+'
+
+expect_rejected "wrong-distribution-checksum" '
+  repo=$1
+  sed -i.bak "s/cf111fcb34804940404e79eaf307876acb8434005bc4cc782d260730a0a2a4f2/0000000000000000000000000000000000000000000000000000000000000000/" "$repo/gradle/wrapper/gradle-wrapper.properties"
+  rm "$repo/gradle/wrapper/gradle-wrapper.properties.bak"
+'
+
+expect_rejected "modified-wrapper-jar" '
+  repo=$1
+  printf x >>"$repo/gradle/wrapper/gradle-wrapper.jar"
+'
+
+expect_rejected "modified-wrapper-verifier" '
+  repo=$1
+  printf "exit 0\\n" >>"$repo/scripts/verify-gradle-wrapper.sh"
+'
+
+expect_rejected "disabled-hostile-tests" '
+  repo=$1
+  printf "#!/usr/bin/env sh\\nexit 0\\n" >"$repo/scripts/test-check-baseline.sh"
+'
+
+expect_rejected "removed-hostile-test-dependency" '
+  repo=$1
+  sed -i.bak "s/check: verify baseline-test/check: verify/" "$repo/Makefile"
+  rm "$repo/Makefile.bak"
+'
+
+expect_rejected "overridden-hostile-test-recipe" '
+  repo=$1
+  cat >>"$repo/Makefile" <<EOF
+
+baseline-test:
+	@:
+EOF
+'
+
+expect_rejected "removed-verify-dependencies" '
+  repo=$1
+  sed -i.bak "s/verify: lint test tasks build/verify:/" "$repo/Makefile"
+  rm "$repo/Makefile.bak"
+'
+
+expect_rejected "whitespace-prefixed-rule-overrides" '
+  repo=$1
+  cat >>"$repo/Makefile" <<EOF
+
+ lint:
+	@:
+ test:
+	@:
+ tasks:
+	@:
+ build:
+	@:
+ baseline-test:
+	@:
+EOF
+'
+
+expect_rejected "private-wear-listener" '
+  repo=$1
+  python3 - "$repo/mobile/src/main/AndroidManifest.xml" <<EOF
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+marker = "arno.di.loreto.crashlyticsforandroidwear.wearable.WearableListenerBroadcaster"
+before, after = text.split(marker, 1)
+after = after.replace("android:exported=\"true\"", "android:exported=\"false\"", 1)
+path.write_text(before + marker + after)
+EOF
+'
+
+expect_rejected "exported-internal-wear-service" '
+  repo=$1
+  python3 - "$repo/wear/src/main/AndroidManifest.xml" <<EOF
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+marker = "arno.di.loreto.crashlyticsforandroidwear.crashlytics.CrashlyticsWearIntentService"
+before, after = text.split(marker, 1)
+after = after.replace("android:exported=\"false\"", "android:exported=\"true\"", 1)
+path.write_text(before + marker + after)
+EOF
+'
+
+expect_rejected "mutable-broadcast-message-payload" '
+  repo=$1
+  sed -i.bak "s/messageSnapshot.getData()/messageEvent.getData()/" "$repo/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/WearableListenerBroadcaster.java"
+  rm "$repo/mobile/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/WearableListenerBroadcaster.java.bak"
+'
+
+printf '%s\n' "Baseline hostile mutation tests passed."

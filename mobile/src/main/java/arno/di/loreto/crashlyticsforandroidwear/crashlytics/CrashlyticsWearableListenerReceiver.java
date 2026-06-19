@@ -60,11 +60,11 @@ public class CrashlyticsWearableListenerReceiver extends WearableListenerReceive
                 sendCrashlyticsReport(DataMap.fromByteArray(messageData));
             }
             catch (IllegalArgumentException e) {
-                Log.e(MYLOGGER, "Ignoring malformed crashlytics payload", e);
+                Log.e(MYLOGGER, "Ignoring malformed crashlytics payload");
             }
         }
         else {
-            Log.d(MYLOGGER, "unknown path:"+ messageEvent.getPath());
+            Log.d(MYLOGGER, "Unknown crashlytics message path");
             super.onMessageReceived(context, messageEvent);
         }
     }

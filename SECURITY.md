@@ -24,6 +24,11 @@ Helpful reports include:
 
 ## Project Security Posture
 
+- Both launcher activities are explicitly exported for user entry, and the
+  mobile Wear listener is explicitly exported only for the legacy Google Play
+  services `BIND_LISTENER` action. Internal crash receivers and Wear intent
+  services are explicitly non-exported.
+
 - This repository appears to be an Android mobile application or sample. The active security scope is the code and documentation on the default branch.
 - Review found external API integrations or credential-adjacent configuration; changes in those areas should receive security-focused review before merge.
 - Review found network clients, sockets, web APIs, or service endpoints; changes in those areas should receive security-focused review before merge.
@@ -32,21 +37,45 @@ Helpful reports include:
 - Internal Wear listener broadcasts should avoid Java object serialization and keep payloads as typed Intent extras.
 - Mobile Crashlytics ingestion should accept only the declared metadata keys,
   must not log metadata values, and must not collect hardware serial identifiers.
+- Wear uncaught-exception handling must not write throwable stack traces to Logcat;
+  the report payload and previous default handler retain the original throwable.
+- Dummy Wear message receipt logs must not include decoded or raw payload content;
+  retain only constant delivery diagnostics.
+- Dummy Wear message path diagnostics must not include peer-controlled path values;
+  retain only a constant category before parent fallback handling.
+- Crashlytics Wear message path diagnostics must not include peer-controlled path values;
+  retain only a constant category before parent fallback handling.
+- Malformed Crashlytics payload diagnostics must not include peer-triggered parser exception details.
+- Wear send diagnostics must not expose paired-device display names or raw provider status messages;
+  retain only constant outcome categories.
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - Review found database, model, query, or persistence-related code; changes in those areas should receive security-focused review before merge.
 - Dependency manifests detected: build.gradle, gradle.properties. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
-- GitHub Actions runs the guarded `make check` baseline with a commit-pinned
-  checkout action, read-only repository access, and hosted Android SDK
-  variables cleared; review workflow, Gradle, and checker changes as part of
-  the supply-chain surface.
+- GitHub Actions installs Android API 21 and build-tools 24.0.3 before selecting
+  Corretto 8 and running the guarded SDK-backed `make check` baseline. The
+  workflow keeps checkout pinned and credential-free with read-only repository
+  access; review workflow, Gradle repository transport, and checker changes as
+  one supply-chain surface.
+- Legacy JCenter artifact coordinates resolve only through the explicit HTTPS
+  endpoint. Do not restore `jcenter()` shorthand or an HTTP repository URL.
+- The direct wrapper uses a generated Gradle 8.14.5 bootstrap and pins the
+  official Gradle 1.12 distribution checksum; review all wrapper artifacts and
+  checksum changes as one supply-chain boundary.
 
 ## Mobile Privacy Notes
+
+The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing.
+Wear data-event diagnostics omit raw provider status messages while preserving status guards and buffer release.
+Wear peer connection diagnostics omit paired-device display names while preserving package-scoped node extras.
 
 If this project requests device permissions such as location, camera, microphone, contacts, Bluetooth, health data, or local storage access, reports should describe the permission involved and whether sensitive data can be accessed, persisted, or transmitted unexpectedly. Please avoid testing against real third-party user data or accounts you do not control.
 
 ## Dependency and Supply Chain Security
 
 Dependency updates should come from trusted package managers and should keep lockfiles in sync when lockfiles exist. Do not commit credentials, private keys, tokens, generated secrets, or machine-local configuration. If a vulnerability depends on a compromised package, typosquatting risk, insecure transitive dependency, or unsafe build step, include the package name, affected version, and the path through which it is used.
+
+The hosted check validates the committed Gradle wrapper JAR against Gradle's
+published checksum allowlist before the wrapper is executed.
 
 ## Safe Research Guidelines
 

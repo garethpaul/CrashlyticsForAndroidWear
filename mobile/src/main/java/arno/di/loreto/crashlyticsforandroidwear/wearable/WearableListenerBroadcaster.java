@@ -56,7 +56,7 @@ public class WearableListenerBroadcaster extends WearableListenerService {
             Log.e(MYLOGGER, "Ignoring disconnected peer without node data");
             return;
         }
-        Log.d(MYLOGGER, "onPeerDisconnected "+ peer.getDisplayName());
+        Log.d(MYLOGGER, "Wear peer disconnected");
         Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_NODE_DISPLAY_NAME, peer.getDisplayName());
         intent.putExtra(EXTRA_NODE_ID, peer.getId());
@@ -75,7 +75,7 @@ public class WearableListenerBroadcaster extends WearableListenerService {
             Log.e(MYLOGGER, "Ignoring connected peer without node data");
             return;
         }
-        Log.d(MYLOGGER, "onPeerConnected "+ peer.getDisplayName());
+        Log.d(MYLOGGER, "Wear peer connected");
         Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_NODE_DISPLAY_NAME, peer.getDisplayName());
         intent.putExtra(EXTRA_NODE_ID, peer.getId());
@@ -94,13 +94,14 @@ public class WearableListenerBroadcaster extends WearableListenerService {
             Log.e(MYLOGGER, "Ignoring message event without path");
             return;
         }
-        Log.d(MYLOGGER, "onMessageReceived, path="+messageEvent.getPath());
+        SerializableMessageEvent messageSnapshot = new SerializableMessageEvent(messageEvent);
+        Log.d(MYLOGGER, "Wear message received");
         Intent intent = newWearEventIntent();
         intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_MESSAGE_RECEIVED);
-        intent.putExtra(EXTRA_DATA_PATH, messageEvent.getPath());
-        intent.putExtra(EXTRA_MESSAGE_DATA, messageEvent.getData());
-        intent.putExtra(EXTRA_MESSAGE_REQUEST_ID, messageEvent.getRequestId());
-        intent.putExtra(EXTRA_MESSAGE_SOURCE_NODE_ID, messageEvent.getSourceNodeId());
+        intent.putExtra(EXTRA_DATA_PATH, messageSnapshot.getPath());
+        intent.putExtra(EXTRA_MESSAGE_DATA, messageSnapshot.getData());
+        intent.putExtra(EXTRA_MESSAGE_REQUEST_ID, messageSnapshot.getRequestId());
+        intent.putExtra(EXTRA_MESSAGE_SOURCE_NODE_ID, messageSnapshot.getSourceNodeId());
         Log.d(MYLOGGER, "Broadcasting to " + ACTION_NAME);
         this.sendBroadcast(intent);
         super.onMessageReceived(messageEvent);
@@ -117,7 +118,7 @@ public class WearableListenerBroadcaster extends WearableListenerService {
                 Log.e(MYLOGGER, "Ignoring data change without status");
                 return;
             }
-            Log.d(MYLOGGER, "onDataChanged"+ dataEvents.getStatus().getStatusMessage());
+            Log.d(MYLOGGER, "Wear data change received");
             /*
             Intent intent = new Intent(ACTION_NAME);
             intent.putExtra(EXTRA_DATA_EVENT_TYPE, EVENT_TYPE_ON_DATA_CHANGED);

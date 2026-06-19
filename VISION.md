@@ -17,11 +17,15 @@ The current focus is:
 
 Priority:
 
+- The mobile Wear event broadcaster keeps paired-peer message paths out of Logcat while preserving package-scoped routing.
+- Wear data-event diagnostics omit raw provider status messages while preserving status guards and buffer release.
+- Wear peer connection diagnostics omit paired-device display names while preserving package-scoped node extras.
 - Preserve the uncaught-exception-to-wear-message flow
 - Keep Crashlytics handling separated from other wearable messages
 - Keep Wear report types constrained to declared crash/exception values
 - Keep mobile Crashlytics report types constrained to declared values
 - Avoid local debug logging of throwable stack traces on the wear device
+- Keep uncaught Wear crash receipt logs free of throwable stack traces
 - Avoid local debug logging of reconstructed Wear stack traces on the phone
 - Reject incomplete decoded crash reports before writing mobile Crashlytics
   metadata
@@ -30,15 +34,26 @@ Priority:
 - Guard connected Wear nodes before sending Data Layer messages
 - Keep internal Wear event broadcasts on typed Intent extras instead of Java
   object serialization
+- Keep Wear event wrappers immutable with defensively copied message payloads
 - Guard Wear Data Layer send results before reading status details
 - Bound Wear Data Layer connection, discovery, and send waits
+- Keep dummy Wear-to-mobile text messages on an explicit UTF-8 wire format
+- Keep dummy Wear receipt logs free of message payload content
+- Keep dummy Wear path diagnostics free of peer-controlled path values
+- Keep Crashlytics Wear path diagnostics free of peer-controlled path values
+- Keep malformed Crashlytics payload diagnostics free of parser exception details
+- Keep Wear send outcome logs limited to constant categories without device names or provider details
 - Keep mobile and wear app-data backup disabled by default
 - Avoid committing Fabric or Crashlytics credentials
-- Keep the SDK-free `make check` baseline running in GitHub Actions
+- Keep SDK-backed mobile and Wear lint, checks, task discovery, and debug
+  assembly running in GitHub Actions with HTTPS-only dependency repositories
+- Retain a checksum-verified direct wrapper for the legacy Gradle 1.12 build
 - Maintain the mobile/wear module relationship
 
 Next priorities:
 
+- Execute the Crashlytics Wear device verification matrix against an exact
+  commit with paired test devices and a private test project
 - Document current build requirements and legacy dependency constraints
 - Replace dynamic dependency versions with reproducible versions
 - Modernize Fabric/Crashlytics and wearable APIs in a dedicated pass
