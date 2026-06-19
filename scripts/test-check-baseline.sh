@@ -96,6 +96,21 @@ expect_rejected "removed-hostile-test-dependency" '
   rm "$repo/Makefile.bak"
 '
 
+expect_rejected "overridden-hostile-test-recipe" '
+  repo=$1
+  cat >>"$repo/Makefile" <<EOF
+
+baseline-test:
+	@:
+EOF
+'
+
+expect_rejected "removed-verify-dependencies" '
+  repo=$1
+  sed -i.bak "s/verify: lint test tasks build/verify:/" "$repo/Makefile"
+  rm "$repo/Makefile.bak"
+'
+
 expect_rejected "private-wear-listener" '
   repo=$1
   python3 - "$repo/mobile/src/main/AndroidManifest.xml" <<EOF

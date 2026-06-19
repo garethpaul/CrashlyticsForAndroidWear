@@ -187,7 +187,7 @@ require_sha256 "$GRADLEW_BAT" "94102713eb8fb22d032397924c0f38ab2da783ba60d070543
 require_sha256 "$WRAPPER_JAR" "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172" "Wrapper JAR must match Gradle's published 8.14.5 checksum."
 require_sha256 "$WRAPPER" "7bbfd5380175e2a5d096f5d78897f8a1f23448902c795a315ef0b2bb91515f28" "Wrapper properties must match the reviewed checksum contract."
 require_sha256 "$ROOT_DIR/scripts/verify-gradle-wrapper.sh" "7faa35602944d3c6d13268f18ab12e2c7b343adfe304cf5374a077cb1623d94d" "Wrapper verification script must match the reviewed runtime contract."
-require_sha256 "$ROOT_DIR/scripts/test-check-baseline.sh" "97cc3d37942685409ffb3e0fb1cd88ebde86d9d5996f8e2042f37e802ab0514a" "Hostile mutation test script must match the reviewed gate contract."
+require_sha256 "$ROOT_DIR/scripts/test-check-baseline.sh" "7f019ec89c32001031d6c0ee12689bc54796e5a5a23494c58daeae5151dc355b" "Hostile mutation test script must match the reviewed gate contract."
 
 if ! grep -Fq "status: completed" "$WRAPPER_PLAN" || \
    ! grep -Fq "fresh temporary Gradle user home" "$WRAPPER_PLAN" || \
@@ -744,9 +744,21 @@ if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFIL
   exit 1
 fi
 
-if ! grep -Fxq 'baseline-test:' "$MAKEFILE" ||
-  ! grep -Fxq 'check: verify baseline-test' "$MAKEFILE" ||
-  ! grep -Fq '$(ROOT)scripts/test-check-baseline.sh' "$MAKEFILE"; then
+if [ "$(grep -Ec '^verify:' "$MAKEFILE")" -ne 1 ] ||
+  [ "$(grep -Fxc 'verify: lint test tasks build' "$MAKEFILE")" -ne 1 ] ||
+  [ "$(grep -Ec '^check:' "$MAKEFILE")" -ne 1 ] ||
+  [ "$(grep -Fxc 'check: verify baseline-test' "$MAKEFILE")" -ne 1 ] ||
+  ! awk '
+    /^baseline-test:$/ {
+      rule_count++
+      if (getline > 0 && $0 == "\t$(ROOT)scripts/test-check-baseline.sh") {
+        recipe_count++
+      }
+    }
+    END {
+      exit !(rule_count == 1 && recipe_count == 1)
+    }
+  ' "$MAKEFILE"; then
   printf '%s\n' "Make check must retain the hostile mutation test dependency." >&2
   exit 1
 fi
