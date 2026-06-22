@@ -97,6 +97,22 @@ expect_rejected "disabled-hostile-tests" '
   printf "#!/usr/bin/env sh\\nexit 0\\n" >"$repo/scripts/test-check-baseline.sh"
 '
 
+expect_rejected "disabled-cold-start-contract" '
+  repo=$1
+  printf "#!/usr/bin/env sh\nexit 0\n" >"$repo/scripts/test-crashlytics-cold-start.sh"
+'
+
+expect_rejected "disabled-cold-start-mutations" '
+  repo=$1
+  printf "#!/usr/bin/env sh\nexit 0\n" >"$repo/scripts/test-crashlytics-cold-start-mutations.sh"
+'
+
+expect_rejected "removed-cold-start-test-dependencies" '
+  repo=$1
+  sed -i.bak "/test-crashlytics-cold-start/d" "$repo/Makefile"
+  rm "$repo/Makefile.bak"
+'
+
 expect_rejected "removed-hostile-test-dependency" '
   repo=$1
   sed -i.bak "s/check: verify baseline-test/check: verify/" "$repo/Makefile"

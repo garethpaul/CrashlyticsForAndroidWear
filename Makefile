@@ -13,6 +13,8 @@ lint:
 	fi
 
 test:
+	$(ROOT)scripts/test-crashlytics-cold-start.sh
+	$(ROOT)scripts/test-crashlytics-cold-start-mutations.sh
 	$(ROOT)scripts/test-wear-event-snapshots.sh
 	@if [ -d "$(ANDROID_HOME)" ]; then \
 		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" check --no-daemon; \

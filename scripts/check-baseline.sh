@@ -42,6 +42,8 @@ DATA_EVENT_STATUS_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-data-event-status-lo
 HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-17-hosted-android-sdk-verification.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
+COLD_START_TEST="$ROOT_DIR/scripts/test-crashlytics-cold-start.sh"
+COLD_START_MUTATION_TEST="$ROOT_DIR/scripts/test-crashlytics-cold-start-mutations.sh"
 MAKEFILE="$ROOT_DIR/Makefile"
 CHANGES="$ROOT_DIR/CHANGES.md"
 VISION="$ROOT_DIR/VISION.md"
@@ -148,6 +150,8 @@ lint:
 	fi
 
 test:
+	$(ROOT)scripts/test-crashlytics-cold-start.sh
+	$(ROOT)scripts/test-crashlytics-cold-start-mutations.sh
 	$(ROOT)scripts/test-wear-event-snapshots.sh
 	@if [ -d "$(ANDROID_HOME)" ]; then \
 		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" check --no-daemon; \
@@ -221,6 +225,8 @@ for path in \
   "gradle/wrapper/gradle-wrapper.properties" \
   "gradle/wrapper/gradle-wrapper.jar" \
   "scripts/test-check-baseline.sh" \
+  "scripts/test-crashlytics-cold-start.sh" \
+  "scripts/test-crashlytics-cold-start-mutations.sh" \
   "scripts/verify-gradle-wrapper.sh" \
   "settings.gradle" \
   "build.gradle" \
@@ -289,7 +295,9 @@ require_sha256 "$GRADLEW_BAT" "94102713eb8fb22d032397924c0f38ab2da783ba60d070543
 require_sha256 "$WRAPPER_JAR" "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172" "Wrapper JAR must match Gradle's published 8.14.5 checksum."
 require_sha256 "$WRAPPER" "7bbfd5380175e2a5d096f5d78897f8a1f23448902c795a315ef0b2bb91515f28" "Wrapper properties must match the reviewed checksum contract."
 require_sha256 "$ROOT_DIR/scripts/verify-gradle-wrapper.sh" "7faa35602944d3c6d13268f18ab12e2c7b343adfe304cf5374a077cb1623d94d" "Wrapper verification script must match the reviewed runtime contract."
-require_sha256 "$ROOT_DIR/scripts/test-check-baseline.sh" "18c5fb4ccd9ffb219c9f7607a2cdd2f7992b6adb57cd3a3eb5898a02769f3f63" "Hostile mutation test script must match the reviewed gate contract."
+require_sha256 "$ROOT_DIR/scripts/test-check-baseline.sh" "8d40b061cc8dda5059688e8c50539d89b7dece14ace893398ad7cbf3a1f8a872" "Hostile mutation test script must match the reviewed gate contract."
+require_sha256 "$COLD_START_TEST" "fd0879197cc6f339c73e9c0d1ff2a044cdbb4ffbd90718ac4fc1ad3715c8e777" "Crashlytics cold-start contract must match the reviewed test."
+require_sha256 "$COLD_START_MUTATION_TEST" "7fddf113646b36057ac645fe2a9a0c271c0993c5ceada3d6388ca2621bf3020b" "Crashlytics cold-start mutation suite must match the reviewed test."
 
 if [ "$(grep -Fc "maven { url 'https://jcenter.bintray.com' }" "$ROOT_BUILD")" -ne 2 ] || \
    grep -Fq "jcenter()" "$ROOT_BUILD" || \

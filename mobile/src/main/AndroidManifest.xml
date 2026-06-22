@@ -4,7 +4,9 @@
 
     <uses-permission android:name="android.permission.INTERNET"/>
 
-    <application android:allowBackup="false"
+    <application
+        android:name="arno.di.loreto.crashlyticsforandroidwear.CrashlyticsForAndroidWearApplication"
+        android:allowBackup="false"
         android:label="@string/app_name"
         android:icon="@drawable/ic_launcher"
         android:theme="@style/AppTheme">
