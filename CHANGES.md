@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-25
+
+- Initialized mobile Crashlytics from the application process before cold Wear
+  report delivery, while retaining an idempotent activity compatibility path.
+- Added portable source and mutation contracts for process-owned initialization.
+
 ## 2026-06-19
 
 - Validated the committed Gradle wrapper against Gradle's published checksum
