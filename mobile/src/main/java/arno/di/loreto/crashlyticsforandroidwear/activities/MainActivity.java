@@ -8,7 +8,7 @@ import android.view.View;
 import com.crashlytics.android.Crashlytics;
 
 import arno.di.loreto.crashlyticsforandroidwear.R;
-import io.fabric.sdk.android.Fabric;
+import arno.di.loreto.crashlyticsforandroidwear.crashlytics.CrashlyticsInitializer;
 
 /**
  * A simple activity with crash test and exception test buttons.
@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Fabric.with(this, new Crashlytics());
+        CrashlyticsInitializer.initialize(this);
         setContentView(R.layout.main_activity);
     }
 
