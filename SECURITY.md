@@ -39,6 +39,7 @@ Helpful reports include:
   must not log metadata values, and must not collect hardware serial identifiers.
 - Wear uncaught-exception handling must not write throwable stack traces to Logcat;
   the report payload and previous default handler retain the original throwable.
+- Wear uncaught-exception forwarding failures cannot bypass previous default-handler delegation.
 - Dummy Wear message receipt logs must not include decoded or raw payload content;
   retain only constant delivery diagnostics.
 - Dummy Wear message path diagnostics must not include peer-controlled path values;

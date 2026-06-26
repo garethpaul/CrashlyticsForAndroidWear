@@ -140,6 +140,7 @@ Wear peer connection diagnostics omit paired-device display names while preservi
   logging before the report is forwarded.
 - The Wear uncaught-exception handler records receipt without writing the throwable
   or its stack trace to Logcat before forwarding and default-handler delegation.
+- Wear uncaught-exception forwarding failures cannot bypass previous default-handler delegation.
 - Mobile receivers log only the report type before forwarding reconstructed
   Wear throwable payloads to Crashlytics.
 - Mobile receivers forward only the declared Wear device metadata keys to
@@ -188,6 +189,8 @@ Wear peer connection diagnostics omit paired-device display names while preservi
   throwable logging baseline.
 - See `docs/plans/2026-06-13-wear-uncaught-throwable-log-redaction.md` for the
   uncaught-handler receipt-log boundary.
+- See `docs/plans/2026-06-26-uncaught-handler-delegation.md` for guaranteed
+  previous-handler chaining when Wear crash forwarding fails.
 - See `docs/plans/2026-06-09-mobile-throwable-log-redaction.md` for mobile
   Crashlytics receipt log redaction.
 - See `docs/plans/2026-06-09-wear-connected-node-send-guard.md` for
