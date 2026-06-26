@@ -157,8 +157,8 @@ Wear peer connection diagnostics omit paired-device display names while preservi
   before reading node lists, and skip nodes without ids before Data Layer sends.
 - Wear message senders skip missing send results and statuses before reading
   Data Layer status details.
-- Wear message senders bound connection, node lookup, and per-node send waits
-  to five seconds so stalled paired-device operations cannot hold a service indefinitely.
+- Wear connection, node discovery, and per-node sends consume one shared five-second deadline
+  so additional paired nodes cannot multiply an IntentService's blocking lifetime.
 - Dummy text messages use UTF-8 on both Wear and mobile endpoints so
   non-ASCII payloads do not depend on either device's default charset.
 - Dummy message receipt logs omit decoded payload content while retaining a

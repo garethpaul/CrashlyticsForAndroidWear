@@ -1,5 +1,15 @@
 # Changes
 
+## 2026-06-26
+
+- Wear connection, node discovery, and per-node sends consume one shared five-second deadline
+  in both Wear IntentServices, preventing blocking lifetime from scaling with paired nodes.
+- Added a Java 7 host fixture and source contracts for monotonic deadline accounting.
+- Validated the implementation head with local and external-working-directory
+  checks, three hostile deadline mutations, duplicate hosted Android checks,
+  CodeQL Actions and Java/Kotlin analysis, and a clean immutable manual review;
+  the required Codex reviewer failed with HTTP 401 before analysis.
+
 ## 2026-06-25
 
 - Guarded both Wear senders against failed connected-node discovery results

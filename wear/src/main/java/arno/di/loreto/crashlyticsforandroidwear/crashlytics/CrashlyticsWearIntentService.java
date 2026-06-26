@@ -17,6 +17,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.concurrent.TimeUnit;
 
+import arno.di.loreto.crashlyticsforandroidwear.wearable.DataLayerDeadline;
+
 /**
  * An IntentService to send Crashlytics reports to hosting device from wear device.
  * Do not forget to declare CrashlyticsIntentService in AndroidManifest.xml
@@ -28,7 +30,7 @@ public class CrashlyticsWearIntentService extends IntentService {
      * The logger's name.
      */
     private static final String MYLOGGER = CrashlyticsWearIntentService.class.getName();
-    private static final long DATA_LAYER_TIMEOUT_SECONDS = 5;
+    private static final long DATA_LAYER_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(5L);
     /**
      * The Intent's name.
      */
@@ -216,17 +218,28 @@ public class CrashlyticsWearIntentService extends IntentService {
         GoogleApiClient mApiClient = new GoogleApiClient.Builder(CrashlyticsWearIntentService.this)
                 .addApi( Wearable.API )
                 .build();
+        long startedAtNanos = System.nanoTime();
         try {
             Log.d(MYLOGGER, "Connecting to Google API");
+            long remainingNanos = remainingDataLayerNanos(startedAtNanos);
+            if (remainingNanos == 0) {
+                Log.e(MYLOGGER, "Data Layer deadline expired before connection");
+                return;
+            }
             if (!mApiClient.blockingConnect(
-                    DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS).isSuccess()) {
+                    remainingNanos, TimeUnit.NANOSECONDS).isSuccess()) {
                 Log.e(MYLOGGER, "Connecting to Google API failed");
                 return;
             }
             Log.d(MYLOGGER, "Connected to Google API");
 
+            remainingNanos = remainingDataLayerNanos(startedAtNanos);
+            if (remainingNanos == 0) {
+                Log.e(MYLOGGER, "Data Layer deadline expired before node discovery");
+                return;
+            }
             NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(mApiClient)
-                    .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                    .await(remainingNanos, TimeUnit.NANOSECONDS);
             if (nodes == null || nodes.getStatus() == null || !nodes.getStatus().isSuccess()) {
                 Log.e(MYLOGGER, "Connected node discovery failed for crashlytics report");
                 return;
@@ -242,9 +255,14 @@ public class CrashlyticsWearIntentService extends IntentService {
                     continue;
                 }
 
+                remainingNanos = remainingDataLayerNanos(startedAtNanos);
+                if (remainingNanos == 0) {
+                    Log.e(MYLOGGER, "Data Layer deadline expired before crashlytics send");
+                    break;
+                }
                 MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
                         mApiClient, node.getId(), path, dataMap.toByteArray())
-                        .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                        .await(remainingNanos, TimeUnit.NANOSECONDS);
                 if (result == null || result.getStatus() == null) {
                     Log.e(MYLOGGER, "Crashlytics send finished without status");
                     continue;
@@ -262,5 +280,10 @@ public class CrashlyticsWearIntentService extends IntentService {
                 mApiClient.disconnect();
             }
         }
+    }
+
+    private static long remainingDataLayerNanos(long startedAtNanos) {
+        return DataLayerDeadline.remainingNanos(
+                startedAtNanos, System.nanoTime(), DATA_LAYER_TIMEOUT_NANOS);
     }
 }
