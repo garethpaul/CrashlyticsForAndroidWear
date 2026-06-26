@@ -1,6 +1,6 @@
 # Wear Node Discovery Status Implementation Plan
 
-**Status:** Pending hosted verification
+**Status:** Completed
 
 > **For Claude:** REQUIRED SUB-SKILL: Use executing-plans to implement this plan task-by-task.
 
@@ -116,4 +116,7 @@ verify any findings manually, and merge only when no actionable finding remains.
 - The Android SDK was unavailable locally, so Gradle lint, checks, task
   discovery, and debug assembly were skipped pending hosted verification.
 - Paired-device delivery was not exercised locally.
-- Exact-head hosted checks remain pending.
+- Exact-head hosted Check runs `28219654941` and `28219655844` passed the
+  Android SDK-backed lint, checks, task discovery, and mobile/Wear debug builds.
+- Exact-head CodeQL run `28219654907` passed Actions and Java/Kotlin analysis.
+- Exact-head hosted Check and CodeQL passed.
