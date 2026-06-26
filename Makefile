@@ -14,6 +14,8 @@ lint:
 
 test:
 	$(ROOT)scripts/test-data-layer-deadline.sh
+	$(ROOT)scripts/test-uncaught-handler-delegation.sh
+	$(ROOT)scripts/test-uncaught-handler-delegation-mutations.sh
 	$(ROOT)scripts/test-crashlytics-cold-start.sh
 	$(ROOT)scripts/test-crashlytics-cold-start-mutations.sh
 	$(ROOT)scripts/test-wear-node-discovery-status.sh

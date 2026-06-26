@@ -51,6 +51,10 @@ DATA_LAYER_DEADLINE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsfora
 DATA_LAYER_DEADLINE_CHECK="$ROOT_DIR/scripts/DataLayerDeadlineCheck.java"
 DATA_LAYER_DEADLINE_TEST="$ROOT_DIR/scripts/test-data-layer-deadline.sh"
 DATA_LAYER_DEADLINE_PLAN="$ROOT_DIR/docs/plans/2026-06-26-shared-data-layer-deadline.md"
+UNCAUGHT_DELEGATION_TEST="$ROOT_DIR/scripts/test-uncaught-handler-delegation.sh"
+UNCAUGHT_DELEGATION_MUTATION_TEST="$ROOT_DIR/scripts/test-uncaught-handler-delegation-mutations.sh"
+UNCAUGHT_DELEGATION_DESIGN="$ROOT_DIR/docs/plans/2026-06-26-uncaught-handler-delegation-design.md"
+UNCAUGHT_DELEGATION_PLAN="$ROOT_DIR/docs/plans/2026-06-26-uncaught-handler-delegation.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 CHANGES="$ROOT_DIR/CHANGES.md"
 VISION="$ROOT_DIR/VISION.md"
@@ -158,6 +162,8 @@ lint:
 
 test:
 	$(ROOT)scripts/test-data-layer-deadline.sh
+	$(ROOT)scripts/test-uncaught-handler-delegation.sh
+	$(ROOT)scripts/test-uncaught-handler-delegation-mutations.sh
 	$(ROOT)scripts/test-crashlytics-cold-start.sh
 	$(ROOT)scripts/test-crashlytics-cold-start-mutations.sh
 	$(ROOT)scripts/test-wear-node-discovery-status.sh
@@ -233,6 +239,8 @@ for path in \
   "docs/plans/2026-06-25-wear-node-discovery-status-design.md" \
   "docs/plans/2026-06-25-wear-node-discovery-status.md" \
   "docs/plans/2026-06-26-shared-data-layer-deadline.md" \
+  "docs/plans/2026-06-26-uncaught-handler-delegation-design.md" \
+  "docs/plans/2026-06-26-uncaught-handler-delegation.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -244,6 +252,8 @@ for path in \
   "scripts/test-wear-node-discovery-status-mutations.sh" \
   "scripts/DataLayerDeadlineCheck.java" \
   "scripts/test-data-layer-deadline.sh" \
+  "scripts/test-uncaught-handler-delegation.sh" \
+  "scripts/test-uncaught-handler-delegation-mutations.sh" \
   "scripts/verify-gradle-wrapper.sh" \
   "settings.gradle" \
   "build.gradle" \
@@ -1117,6 +1127,35 @@ fi
 if ! grep -Fq 'errorIntent.putExtra(CrashlyticsWearIntentService.EXTRA_DATA_ERROR, ex)' "$WEAR_UNCAUGHT_HANDLER" ||
   ! grep -Fq 'mDefaultUncaughtExceptionHandler.uncaughtException(thread, ex)' "$WEAR_UNCAUGHT_HANDLER"; then
   printf '%s\n' "Uncaught handler must preserve crash forwarding and previous-handler delegation." >&2
+  exit 1
+fi
+
+if [ ! -x "$UNCAUGHT_DELEGATION_TEST" ] || \
+   [ ! -x "$UNCAUGHT_DELEGATION_MUTATION_TEST" ] || \
+   [ "$(grep -Fc '$(ROOT)scripts/test-uncaught-handler-delegation.sh' "$MAKEFILE")" -ne 1 ] || \
+   [ "$(grep -Fc '$(ROOT)scripts/test-uncaught-handler-delegation-mutations.sh' "$MAKEFILE")" -ne 1 ]; then
+  printf '%s\n' "Uncaught-handler delegation contracts must be executable and run exactly once." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'try {' "$WEAR_UNCAUGHT_HANDLER" || \
+   ! grep -Fq '} finally {' "$WEAR_UNCAUGHT_HANDLER"; then
+  printf '%s\n' "Uncaught handler must guarantee previous-handler delegation with try/finally." >&2
+  exit 1
+fi
+
+for guidance_file in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Wear uncaught-exception forwarding failures cannot bypass previous default-handler delegation" "$ROOT_DIR/$guidance_file"; then
+    printf '%s\n' "Repository guidance must document exception-safe uncaught-handler delegation: $guidance_file" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "Status:** Completed" "$UNCAUGHT_DELEGATION_PLAN" || \
+   ! grep -Fq "All three hostile mutations were rejected" "$UNCAUGHT_DELEGATION_PLAN" || \
+   ! grep -Fq "Paired-device forwarding and user-visible crash UI were not exercised locally" "$UNCAUGHT_DELEGATION_PLAN" || \
+   ! grep -Fq 'Use a local `try/finally`' "$UNCAUGHT_DELEGATION_DESIGN"; then
+  printf '%s\n' "Uncaught-handler delegation plans must record the reviewed design and completed verification." >&2
   exit 1
 fi
 

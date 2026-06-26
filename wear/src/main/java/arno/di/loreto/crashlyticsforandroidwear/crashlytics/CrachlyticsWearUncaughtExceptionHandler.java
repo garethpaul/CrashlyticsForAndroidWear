@@ -46,27 +46,30 @@ public class CrachlyticsWearUncaughtExceptionHandler implements Thread.UncaughtE
      */
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
-        Log.e(MYLOGGER, "Uncaught exception received");
-        if (mApplication != null && ex != null) {
-            //Do not forget to declare CrashlyticsWearIntentService in AndroidManifest.xml
-            Intent errorIntent = new Intent(mApplication, CrashlyticsWearIntentService.class);
-            errorIntent.putExtra(CrashlyticsWearIntentService.EXTRA_DATA_ERROR, ex);
-            errorIntent.putExtra(CrashlyticsWearIntentService.EXTRA_DATA_REPORT_TYPE,
-                    CrashlyticsWearIntentService.REPORT_TYPE_CRASH);
+        try {
+            Log.e(MYLOGGER, "Uncaught exception received");
+            if (mApplication != null && ex != null) {
+                //Do not forget to declare CrashlyticsWearIntentService in AndroidManifest.xml
+                Intent errorIntent = new Intent(mApplication, CrashlyticsWearIntentService.class);
+                errorIntent.putExtra(CrashlyticsWearIntentService.EXTRA_DATA_ERROR, ex);
+                errorIntent.putExtra(CrashlyticsWearIntentService.EXTRA_DATA_REPORT_TYPE,
+                        CrashlyticsWearIntentService.REPORT_TYPE_CRASH);
 
-            mApplication.startService(errorIntent);
-        }
-        else {
-            Log.e(MYLOGGER, "Skipping CrashlyticsWearIntentService without application and throwable");
-        }
-        //We call the original default uncaught exception handler
-        //If we do not do that, the user won't see classic error screen
-        //but you may handle this differently (to show a personalized screeen for example)
-        if (mDefaultUncaughtExceptionHandler != null) {
-            mDefaultUncaughtExceptionHandler.uncaughtException(thread, ex);
-        }
-        else {
-            Log.e(MYLOGGER, "No default uncaught exception handler is available");
+                mApplication.startService(errorIntent);
+            }
+            else {
+                Log.e(MYLOGGER, "Skipping CrashlyticsWearIntentService without application and throwable");
+            }
+        } finally {
+            //We call the original default uncaught exception handler
+            //If we do not do that, the user won't see classic error screen
+            //but you may handle this differently (to show a personalized screeen for example)
+            if (mDefaultUncaughtExceptionHandler != null) {
+                mDefaultUncaughtExceptionHandler.uncaughtException(thread, ex);
+            }
+            else {
+                Log.e(MYLOGGER, "No default uncaught exception handler is available");
+            }
         }
     }
 

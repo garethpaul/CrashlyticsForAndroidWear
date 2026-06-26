@@ -55,6 +55,7 @@
 - Debug builds disable Fabric resource tasks while the all-zero Crashlytics API key placeholder is present. Use local untracked configuration for real Crashlytics credentials when testing against Fabric.
 - Wear crash forwarding sends stack traces as text, package-scopes internal broadcasts, and disconnects GoogleApiClient clients after message sends.
 - Wear uncaught-exception receipt logs must never include the Throwable; preserve report forwarding and previous-handler delegation.
+- Wear uncaught-exception forwarding failures cannot bypass previous default-handler delegation.
 - Wear message and node wrappers are immutable snapshots; message payload arrays are defensively copied on capture and access.
 - Snapshot Wear message events before placing payload arrays into asynchronous broadcast Intents.
 - Validate the committed Gradle wrapper JAR against Gradle's published checksum before executing it.

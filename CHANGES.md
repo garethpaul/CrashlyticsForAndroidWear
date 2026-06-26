@@ -2,6 +2,7 @@
 
 ## 2026-06-26
 
+- Wear uncaught-exception forwarding failures cannot bypass previous default-handler delegation.
 - Wear connection, node discovery, and per-node sends consume one shared five-second deadline
   in both Wear IntentServices, preventing blocking lifetime from scaling with paired nodes.
 - Added a Java 7 host fixture and source contracts for monotonic deadline accounting.
