@@ -227,7 +227,11 @@ public class CrashlyticsWearIntentService extends IntentService {
 
             NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(mApiClient)
                     .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            if (nodes == null || nodes.getNodes() == null) {
+            if (nodes == null || nodes.getStatus() == null || !nodes.getStatus().isSuccess()) {
+                Log.e(MYLOGGER, "Connected node discovery failed for crashlytics report");
+                return;
+            }
+            if (nodes.getNodes() == null) {
                 Log.e(MYLOGGER, "No connected nodes available for crashlytics report");
                 return;
             }

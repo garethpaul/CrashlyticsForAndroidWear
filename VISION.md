@@ -43,6 +43,7 @@ Priority:
 - Keep Crashlytics Wear path diagnostics free of peer-controlled path values
 - Keep malformed Crashlytics payload diagnostics free of parser exception details
 - Keep Wear send outcome logs limited to constant categories without device names or provider details
+- Validate connected-node discovery status before reading paired nodes
 - Keep mobile and wear app-data backup disabled by default
 - Avoid committing Fabric or Crashlytics credentials
 - Keep SDK-backed mobile and Wear lint, checks, task discovery, and debug

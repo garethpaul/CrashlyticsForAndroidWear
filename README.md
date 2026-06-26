@@ -153,8 +153,8 @@ Wear peer connection diagnostics omit paired-device display names while preservi
   for peer and message fields.
 - Wear message and node wrappers are immutable snapshots, and message payload
   bytes are copied both when captured and when read by a receiver.
-- Wear message senders skip missing connected-node results and node ids before
-  sending crash or dummy payloads through the Data Layer.
+- Wear message senders reject missing or unsuccessful connected-node discovery results
+  before reading node lists, and skip nodes without ids before Data Layer sends.
 - Wear message senders skip missing send results and statuses before reading
   Data Layer status details.
 - Wear message senders bound connection, node lookup, and per-node send waits
