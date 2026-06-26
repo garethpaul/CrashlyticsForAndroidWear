@@ -48,6 +48,8 @@ Helpful reports include:
 - Malformed Crashlytics payload diagnostics must not include peer-triggered parser exception details.
 - Wear send diagnostics must not expose paired-device display names or raw provider status messages;
   retain only constant outcome categories.
+- Wear connection, node discovery, and per-node sends consume one shared five-second deadline;
+  do not restore fresh per-operation budgets that scale with paired-node count.
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - Review found database, model, query, or persistence-related code; changes in those areas should receive security-focused review before merge.
 - Dependency manifests detected: build.gradle, gradle.properties. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.

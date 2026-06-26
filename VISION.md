@@ -36,7 +36,7 @@ Priority:
   object serialization
 - Keep Wear event wrappers immutable with defensively copied message payloads
 - Guard Wear Data Layer send results before reading status details
-- Bound Wear Data Layer connection, discovery, and send waits
+- Wear connection, node discovery, and per-node sends consume one shared five-second deadline
 - Keep dummy Wear-to-mobile text messages on an explicit UTF-8 wire format
 - Keep dummy Wear receipt logs free of message payload content
 - Keep dummy Wear path diagnostics free of peer-controlled path values

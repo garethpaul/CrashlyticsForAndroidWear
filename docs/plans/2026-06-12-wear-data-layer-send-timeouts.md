@@ -2,6 +2,10 @@
 
 ## Status: Completed
 
+The original per-operation timeout was superseded on 2026-06-26 by
+[`2026-06-26-shared-data-layer-deadline.md`](2026-06-26-shared-data-layer-deadline.md),
+which applies one deadline across the full send lifecycle.
+
 ## Goal
 
 Bound Google Play Services connection, connected-node discovery, and per-node

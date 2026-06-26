@@ -13,6 +13,8 @@ import com.google.android.gms.wearable.Wearable;
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
+import arno.di.loreto.crashlyticsforandroidwear.wearable.DataLayerDeadline;
+
 /**
  * A dummy message sender to illustrate the need of handling different type of message
  * between the watch and the host device.
@@ -20,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class SendDummyMessageIntentService extends IntentService {
 
     private static final String MYLOGGER = SendDummyMessageIntentService.class.getName();
-    private static final long DATA_LAYER_TIMEOUT_SECONDS = 5;
+    private static final long DATA_LAYER_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(5L);
     private static final Charset UTF_8 = Charset.forName("UTF-8");
     /**
      * The Intent's name.
@@ -71,17 +73,28 @@ public class SendDummyMessageIntentService extends IntentService {
         GoogleApiClient mApiClient = new GoogleApiClient.Builder(this)
                 .addApi( Wearable.API )
                 .build();
+        long startedAtNanos = System.nanoTime();
         try {
             Log.d(MYLOGGER, "Connecting to Google API");
+            long remainingNanos = remainingDataLayerNanos(startedAtNanos);
+            if (remainingNanos == 0) {
+                Log.e(MYLOGGER, "Data Layer deadline expired before connection");
+                return;
+            }
             if (!mApiClient.blockingConnect(
-                    DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS).isSuccess()) {
+                    remainingNanos, TimeUnit.NANOSECONDS).isSuccess()) {
                 Log.e(MYLOGGER, "Connecting to Google API failed");
                 return;
             }
             Log.d(MYLOGGER, "Connected to Google API");
 
+            remainingNanos = remainingDataLayerNanos(startedAtNanos);
+            if (remainingNanos == 0) {
+                Log.e(MYLOGGER, "Data Layer deadline expired before node discovery");
+                return;
+            }
             NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(mApiClient)
-                    .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                    .await(remainingNanos, TimeUnit.NANOSECONDS);
             if (nodes == null || nodes.getStatus() == null || !nodes.getStatus().isSuccess()) {
                 Log.e(MYLOGGER, "Connected node discovery failed for dummy message");
                 return;
@@ -97,9 +110,14 @@ public class SendDummyMessageIntentService extends IntentService {
                     continue;
                 }
 
+                remainingNanos = remainingDataLayerNanos(startedAtNanos);
+                if (remainingNanos == 0) {
+                    Log.e(MYLOGGER, "Data Layer deadline expired before dummy send");
+                    break;
+                }
                 MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
                         mApiClient, node.getId(), path, message.getBytes(UTF_8))
-                        .await(DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                        .await(remainingNanos, TimeUnit.NANOSECONDS);
                 if (result == null || result.getStatus() == null) {
                     Log.e(MYLOGGER, "Dummy message send finished without status");
                     continue;
@@ -117,5 +135,10 @@ public class SendDummyMessageIntentService extends IntentService {
                 mApiClient.disconnect();
             }
         }
+    }
+
+    private static long remainingDataLayerNanos(long startedAtNanos) {
+        return DataLayerDeadline.remainingNanos(
+                startedAtNanos, System.nanoTime(), DATA_LAYER_TIMEOUT_NANOS);
     }
 }

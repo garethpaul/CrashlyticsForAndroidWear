@@ -47,6 +47,10 @@ COLD_START_TEST="$ROOT_DIR/scripts/test-crashlytics-cold-start.sh"
 COLD_START_MUTATION_TEST="$ROOT_DIR/scripts/test-crashlytics-cold-start-mutations.sh"
 NODE_DISCOVERY_TEST="$ROOT_DIR/scripts/test-wear-node-discovery-status.sh"
 NODE_DISCOVERY_MUTATION_TEST="$ROOT_DIR/scripts/test-wear-node-discovery-status-mutations.sh"
+DATA_LAYER_DEADLINE="$ROOT_DIR/wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/DataLayerDeadline.java"
+DATA_LAYER_DEADLINE_CHECK="$ROOT_DIR/scripts/DataLayerDeadlineCheck.java"
+DATA_LAYER_DEADLINE_TEST="$ROOT_DIR/scripts/test-data-layer-deadline.sh"
+DATA_LAYER_DEADLINE_PLAN="$ROOT_DIR/docs/plans/2026-06-26-shared-data-layer-deadline.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 CHANGES="$ROOT_DIR/CHANGES.md"
 VISION="$ROOT_DIR/VISION.md"
@@ -153,6 +157,7 @@ lint:
 	fi
 
 test:
+	$(ROOT)scripts/test-data-layer-deadline.sh
 	$(ROOT)scripts/test-crashlytics-cold-start.sh
 	$(ROOT)scripts/test-crashlytics-cold-start-mutations.sh
 	$(ROOT)scripts/test-wear-node-discovery-status.sh
@@ -227,6 +232,7 @@ for path in \
   "docs/plans/2026-06-17-hosted-android-sdk-verification.md" \
   "docs/plans/2026-06-25-wear-node-discovery-status-design.md" \
   "docs/plans/2026-06-25-wear-node-discovery-status.md" \
+  "docs/plans/2026-06-26-shared-data-layer-deadline.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -236,6 +242,8 @@ for path in \
   "scripts/test-crashlytics-cold-start-mutations.sh" \
   "scripts/test-wear-node-discovery-status.sh" \
   "scripts/test-wear-node-discovery-status-mutations.sh" \
+  "scripts/DataLayerDeadlineCheck.java" \
+  "scripts/test-data-layer-deadline.sh" \
   "scripts/verify-gradle-wrapper.sh" \
   "settings.gradle" \
   "build.gradle" \
@@ -246,6 +254,7 @@ for path in \
   "mobile/lint.xml" \
   "wear/build.gradle" \
   "wear/lint.xml" \
+  "wear/src/main/java/arno/di/loreto/crashlyticsforandroidwear/wearable/DataLayerDeadline.java" \
   "mobile/src/main/AndroidManifest.xml" \
   "wear/src/main/AndroidManifest.xml"; do
   require_file "$path"
@@ -816,25 +825,65 @@ if ! grep -Fq "mApiClient.disconnect()" "$WEAR_SERVICE"; then
   exit 1
 fi
 
+if [ ! -x "$DATA_LAYER_DEADLINE_TEST" ] || \
+   [ "$(grep -Fc '$(ROOT)scripts/test-data-layer-deadline.sh' "$MAKEFILE")" -ne 1 ]; then
+  printf '%s\n' "The portable Data Layer deadline test must be executable and run exactly once." >&2
+  exit 1
+fi
+
+if ! grep -Fq "public final class DataLayerDeadline" "$DATA_LAYER_DEADLINE" || \
+   ! grep -Fq "public static long remainingNanos" "$DATA_LAYER_DEADLINE" || \
+   ! grep -Fq "long elapsedNanos = currentNanos - startedAtNanos;" "$DATA_LAYER_DEADLINE" || \
+   ! grep -Fq "return timeoutNanos - elapsedNanos;" "$DATA_LAYER_DEADLINE" || \
+   ! grep -Fq "timeoutNanos <= 0" "$DATA_LAYER_DEADLINE"; then
+  printf '%s\n' "The shared Data Layer deadline helper must preserve the reviewed monotonic budget contract." >&2
+  exit 1
+fi
+
+for deadline_case in keepsFullBudgetAtStart subtractsElapsedBudget expiresAtDeadline rejectsInvalidBudget; do
+  if [ "$(grep -Fc "$deadline_case" "$DATA_LAYER_DEADLINE_CHECK")" -ne 2 ]; then
+    printf '%s\n' "The portable Data Layer deadline check must keep all four reviewed cases." >&2
+    exit 1
+  fi
+done
+
 for sender in "$WEAR_SERVICE" "$DUMMY_SERVICE"; do
-  if ! grep -Fq "private static final long DATA_LAYER_TIMEOUT_SECONDS = 5;" "$sender" || \
-     ! grep -Fq "import java.util.concurrent.TimeUnit;" "$sender" || \
-     ! grep -Fq "DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS" "$sender"; then
-    printf '%s\n' "Wear message senders must declare and use the five-second Data Layer timeout." >&2
+  if ! grep -Fq "private static final long DATA_LAYER_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(5L);" "$sender" || \
+     ! grep -Fq "import arno.di.loreto.crashlyticsforandroidwear.wearable.DataLayerDeadline;" "$sender" || \
+     ! grep -Fq "long startedAtNanos = System.nanoTime();" "$sender" || \
+     ! grep -Fq "DataLayerDeadline.remainingNanos(" "$sender"; then
+    printf '%s\n' "Wear message senders must declare and consume one shared five-second Data Layer deadline." >&2
     exit 1
   fi
 
-  if grep -Fq "blockingConnect().isSuccess()" "$sender" || grep -Fq ").await();" "$sender"; then
+  if grep -Fq "blockingConnect().isSuccess()" "$sender" || grep -Fq ").await();" "$sender" || \
+     grep -Fq "DATA_LAYER_TIMEOUT_SECONDS" "$sender" || grep -Fq "TimeUnit.SECONDS).isSuccess()" "$sender" || \
+     grep -Fq "TimeUnit.SECONDS);" "$sender"; then
     printf '%s\n' "Wear message senders must not use unbounded Data Layer waits." >&2
     exit 1
   fi
 
-  timeout_use_count=$(grep -Fc "DATA_LAYER_TIMEOUT_SECONDS, TimeUnit.SECONDS" "$sender")
-  if [ "$timeout_use_count" -ne 3 ]; then
-    printf '%s\n' "Each Wear sender must bound connection, node lookup, and message send waits." >&2
+  deadline_use_count=$(grep -Fc "remainingDataLayerNanos(startedAtNanos)" "$sender")
+  nanosecond_wait_count=$(grep -Fc "TimeUnit.NANOSECONDS" "$sender")
+  if [ "$deadline_use_count" -ne 3 ] || [ "$nanosecond_wait_count" -ne 3 ]; then
+    printf '%s\n' "Each Wear sender must share the deadline across connection, node lookup, and message sends." >&2
     exit 1
   fi
 done
+
+for guidance_file in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Wear connection, node discovery, and per-node sends consume one shared five-second deadline" "$ROOT_DIR/$guidance_file"; then
+    printf '%s\n' "Repository guidance must document the shared Data Layer deadline: $guidance_file" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "Status: Completed" "$DATA_LAYER_DEADLINE_PLAN" || \
+   ! grep -Fq "one monotonic five-second budget" "$DATA_LAYER_DEADLINE_PLAN" || \
+   ! grep -Fq "scripts/test-data-layer-deadline.sh" "$DATA_LAYER_DEADLINE_PLAN"; then
+  printf '%s\n' "The shared Data Layer deadline plan must record the completed portable contract." >&2
+  exit 1
+fi
 
 if ! grep -Fq "path == null || path.length() == 0 || dataMap == null" "$WEAR_SERVICE" ||
   ! grep -Fq "nodes == null || nodes.getStatus() == null || !nodes.getStatus().isSuccess()" "$WEAR_SERVICE" ||
@@ -1370,8 +1419,8 @@ if grep -Fq "**Status:** Completed" "$NODE_DISCOVERY_PLAN" &&
   exit 1
 fi
 
-if ! grep -Fq "Wear message senders bound connection, node lookup, and per-node send waits" "$README"; then
-  printf '%s\n' "README must document bounded Wear Data Layer waits." >&2
+if ! grep -Fq "Wear connection, node discovery, and per-node sends consume one shared five-second deadline" "$README"; then
+  printf '%s\n' "README must document the shared Wear Data Layer deadline." >&2
   exit 1
 fi
 
