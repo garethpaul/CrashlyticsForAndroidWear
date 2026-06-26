@@ -116,3 +116,9 @@ verify any findings manually, and merge only when no actionable finding remains.
 - The Android SDK was unavailable locally, so Gradle lint, checks, task
   discovery, and debug assembly were skipped pending hosted verification.
 - Paired-device forwarding and user-visible crash UI were not exercised locally.
+- Exact-head hosted Check runs `28253172116` and `28253174720` passed the Android
+  SDK-backed lint, checks, task discovery, and mobile/Wear debug builds.
+- Exact-head CodeQL run `28253173188` passed Actions and Java/Kotlin analysis.
+- Manual review found no actionable issue. The required Codex reviewer was
+  invoked but failed with HTTP 401 before analysis, so the authentication-only
+  failure was skipped under the maintenance objective.
