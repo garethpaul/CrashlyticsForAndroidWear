@@ -2,6 +2,8 @@
 
 ## 2026-06-25
 
+- Guarded both Wear senders against failed connected-node discovery results
+  before reading or iterating paired nodes.
 - Initialized mobile Crashlytics from the application process before cold Wear
   report delivery, while retaining an idempotent activity compatibility path.
 - Added portable source and mutation contracts for process-owned initialization.

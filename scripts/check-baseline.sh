@@ -40,10 +40,13 @@ BROADCASTER_PATH_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-broadcaster-message-p
 PEER_DISPLAY_NAME_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-peer-display-name-log-redaction.md"
 DATA_EVENT_STATUS_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-16-data-event-status-log-redaction.md"
 HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-17-hosted-android-sdk-verification.md"
+NODE_DISCOVERY_PLAN="$ROOT_DIR/docs/plans/2026-06-25-wear-node-discovery-status.md"
 SNAPSHOT_TEST="$ROOT_DIR/scripts/test-wear-event-snapshots.sh"
 SNAPSHOT_CHECK="$ROOT_DIR/scripts/WearEventSnapshotCheck.java"
 COLD_START_TEST="$ROOT_DIR/scripts/test-crashlytics-cold-start.sh"
 COLD_START_MUTATION_TEST="$ROOT_DIR/scripts/test-crashlytics-cold-start-mutations.sh"
+NODE_DISCOVERY_TEST="$ROOT_DIR/scripts/test-wear-node-discovery-status.sh"
+NODE_DISCOVERY_MUTATION_TEST="$ROOT_DIR/scripts/test-wear-node-discovery-status-mutations.sh"
 MAKEFILE="$ROOT_DIR/Makefile"
 CHANGES="$ROOT_DIR/CHANGES.md"
 VISION="$ROOT_DIR/VISION.md"
@@ -152,6 +155,8 @@ lint:
 test:
 	$(ROOT)scripts/test-crashlytics-cold-start.sh
 	$(ROOT)scripts/test-crashlytics-cold-start-mutations.sh
+	$(ROOT)scripts/test-wear-node-discovery-status.sh
+	$(ROOT)scripts/test-wear-node-discovery-status-mutations.sh
 	$(ROOT)scripts/test-wear-event-snapshots.sh
 	@if [ -d "$(ANDROID_HOME)" ]; then \
 		ANDROID_HOME="$(ANDROID_HOME)" $(GRADLE) --project-dir "$(ROOT)" check --no-daemon; \
@@ -220,6 +225,8 @@ for path in \
   "docs/plans/2026-06-16-crashlytics-malformed-payload-log-redaction.md" \
   "docs/plans/2026-06-16-peer-display-name-log-redaction.md" \
   "docs/plans/2026-06-17-hosted-android-sdk-verification.md" \
+  "docs/plans/2026-06-25-wear-node-discovery-status-design.md" \
+  "docs/plans/2026-06-25-wear-node-discovery-status.md" \
   "gradlew" \
   "gradlew.bat" \
   "gradle/wrapper/gradle-wrapper.properties" \
@@ -227,6 +234,8 @@ for path in \
   "scripts/test-check-baseline.sh" \
   "scripts/test-crashlytics-cold-start.sh" \
   "scripts/test-crashlytics-cold-start-mutations.sh" \
+  "scripts/test-wear-node-discovery-status.sh" \
+  "scripts/test-wear-node-discovery-status-mutations.sh" \
   "scripts/verify-gradle-wrapper.sh" \
   "settings.gradle" \
   "build.gradle" \
@@ -828,9 +837,11 @@ for sender in "$WEAR_SERVICE" "$DUMMY_SERVICE"; do
 done
 
 if ! grep -Fq "path == null || path.length() == 0 || dataMap == null" "$WEAR_SERVICE" ||
+  ! grep -Fq "nodes == null || nodes.getStatus() == null || !nodes.getStatus().isSuccess()" "$WEAR_SERVICE" ||
+  ! grep -Fq "Connected node discovery failed for crashlytics report" "$WEAR_SERVICE" ||
   ! grep -Fq "No connected nodes available for crashlytics report" "$WEAR_SERVICE" ||
   ! grep -Fq "Skipping connected node without id" "$WEAR_SERVICE"; then
-  printf '%s\n' "Wear crash sender must guard missing send targets and connected-node ids." >&2
+  printf '%s\n' "Wear crash sender must guard send targets, discovery status, and connected-node ids." >&2
   exit 1
 fi
 
@@ -853,9 +864,11 @@ if ! grep -Fq "Ignoring dummy message without intent" "$DUMMY_SERVICE" ||
 fi
 
 if ! grep -Fq "path == null || path.length() == 0 || message == null || message.length() == 0" "$DUMMY_SERVICE" ||
+  ! grep -Fq "nodes == null || nodes.getStatus() == null || !nodes.getStatus().isSuccess()" "$DUMMY_SERVICE" ||
+  ! grep -Fq "Connected node discovery failed for dummy message" "$DUMMY_SERVICE" ||
   ! grep -Fq "No connected nodes available for dummy message" "$DUMMY_SERVICE" ||
   ! grep -Fq "Skipping dummy message node without id" "$DUMMY_SERVICE"; then
-  printf '%s\n' "Dummy message sender must guard missing send targets and connected-node ids." >&2
+  printf '%s\n' "Dummy message sender must guard send targets, discovery status, and connected-node ids." >&2
   exit 1
 fi
 
@@ -1323,8 +1336,8 @@ if ! grep -Fq "forward only the declared Wear device metadata keys" "$README" ||
   exit 1
 fi
 
-if ! grep -Fq "Wear message senders skip missing connected-node results and node ids" "$README"; then
-  printf '%s\n' "README must document connected-node send guards." >&2
+if ! grep -Fq "Wear message senders reject missing or unsuccessful connected-node discovery results" "$README"; then
+  printf '%s\n' "README must document connected-node discovery status guards." >&2
   exit 1
 fi
 
@@ -1335,6 +1348,25 @@ fi
 
 if ! grep -Fq "Wear message senders skip missing send results and statuses" "$README"; then
   printf '%s\n' "README must document send result status guards." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Connected-node discovery failures stop before either sender reads the node list" "$ROOT_DIR/AGENTS.md" ||
+  ! grep -Fq "Validate connected-node discovery status before reading paired nodes" "$VISION" ||
+  ! grep -Fq "Guarded both Wear senders against failed connected-node discovery results" "$CHANGES"; then
+  printf '%s\n' "Connected-node discovery status guidance must remain synchronized." >&2
+  exit 1
+fi
+
+if ! grep -Eq '^\*\*Status:\*\* (Pending hosted verification|Completed)$' "$NODE_DISCOVERY_PLAN" ||
+  ! grep -Fq "six hostile node-discovery mutations" "$NODE_DISCOVERY_PLAN"; then
+  printf '%s\n' "Node discovery status plan must record implementation and mutation evidence." >&2
+  exit 1
+fi
+
+if grep -Fq "**Status:** Completed" "$NODE_DISCOVERY_PLAN" &&
+  ! grep -Fq "Exact-head hosted Check and CodeQL passed." "$NODE_DISCOVERY_PLAN"; then
+  printf '%s\n' "Completed node discovery status plan must record hosted evidence." >&2
   exit 1
 fi
 

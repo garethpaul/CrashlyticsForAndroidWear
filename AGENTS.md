@@ -66,6 +66,7 @@
 - Wear peer connection diagnostics omit paired-device display names while preserving package-scoped node extras.
 - Wear data-event diagnostics omit raw provider status messages while preserving status guards and buffer release.
 - Keep Wear send outcome logs free of paired-device names and raw provider status messages.
+- Connected-node discovery failures stop before either sender reads the node list; keep diagnostics constant and provider details private.
 
 ## Agent workflow
 
